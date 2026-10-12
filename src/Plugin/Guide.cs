@@ -111,7 +111,11 @@ internal static class Guide
         var options = screen.Cards.Select((card, i) => new ChipOption(card.RelicId, infos[i].Grade)).ToList();
         var advice = ChipAdvisor.Advise(_rules.Current, situation, options);
         var owned = KeywordLock.Owned(situation.OwnedRelics.Select(id => GameTables.ChipInfo(id).Keyword));
-        var warnings = infos.Select(info => Plugin.KeywordWarning.Value ? KeywordLock.Warning(owned, info.Keyword) : null).ToList();
+        var warn = Plugin.KeywordWarning.Value;
+        var core = warn && owned.Count == KeywordLock.Limit - 1
+            ? ChipAdvisor.CoreChips(_rules.Current, situation).Select(id => (GameTables.ChipName(id), GameTables.ChipInfo(id).Keyword)).ToList()
+            : null;
+        var warnings = infos.Select(info => warn ? KeywordLock.Warning(owned, info.Keyword, core) : null).ToList();
         BadgeView.Show(screen.Container, screen.Cards.Select((card, i) => (card.Item, advice[i], warnings[i])).ToList());
         _signature = signature;
 

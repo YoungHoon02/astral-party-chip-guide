@@ -10,6 +10,14 @@ public static class ChipAdvisor
         return options.Select(option => AdviseOne(rules, situation, role, option)).ToList();
     }
 
+    public static IReadOnlyList<int> CoreChips(RuleSet rules, Situation situation)
+    {
+        var ids = rules.Rules.Where(rule => rule.Verdict == Verdict.Core).SelectMany(rule => rule.RelicIds).Distinct().ToList();
+        // 등급 조건은 실제 선택지에서만 의미가 있어 등급 없이 판정한다.
+        var advice = Advise(rules, situation, ids.Select(id => new ChipOption(id, Grade.None)).ToList());
+        return ids.Where((_, i) => advice[i]?.Verdict == Verdict.Core).ToList();
+    }
+
     public static string GradeName(Grade grade) => grade switch
     {
         Grade.Blue => "파랑",

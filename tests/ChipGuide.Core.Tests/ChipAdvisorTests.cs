@@ -150,4 +150,16 @@ public class ChipAdvisorTests
         Assert.Equal(3, advice[0]!.Notes.Count);
         Assert.Equal(new[] { "a", "b", "c" }, advice[0]!.Notes.Select(n => n.Why));
     }
+
+    [Fact]
+    public void 코어_칩은_상황에서_최종_판정이_코어인_칩만_고른다()
+    {
+        var rules = Rules(
+            ForCharacter(Papara, new[] { Adrenaline, Cutter }, Verdict.Core, "파파라 코어"),
+            ForCharacter(Mimi, new[] { Glove }, Verdict.Core, "미미 코어"),
+            new ChipRule(Ids(Adrenaline), Verdict.Avoid, "아군 회복이 아드 조건을 깸", 3, new Condition(Ally: Ids(Lulu))));
+
+        Assert.Equal(new[] { Adrenaline, Cutter }, ChipAdvisor.CoreChips(rules, At(Papara)));
+        Assert.Equal(new[] { Cutter }, ChipAdvisor.CoreChips(rules, At(Papara, allies: new[] { Lulu })));
+    }
 }

@@ -12,6 +12,7 @@ internal static class GameTables
     private static readonly Dictionary<string, int> FallbackStringTypes = new() { ["Character"] = 10, ["Map"] = 31, ["Relic"] = 46 };
     private static readonly Dictionary<string, int> StringTypes = new();
     private static readonly HashSet<string> FailedFields = new();
+    private static readonly Dictionary<int, string> ChipNames = new();
 
     internal static (Grade Grade, Keyword Keyword) ChipInfo(int relicId)
     {
@@ -20,6 +21,14 @@ internal static class GameTables
         var grade = config.Get<int>("RelicQualityType");
         var keyword = config.Get<int>("KeyWordType");
         return (grade is >= 1 and <= 3 ? (Grade)grade : Grade.None, keyword is >= 1 and <= 4 ? (Keyword)keyword : Keyword.None);
+    }
+
+    internal static string ChipName(int relicId)
+    {
+        if (ChipNames.TryGetValue(relicId, out var name)) return name;
+        var config = RuntimeObject.StaticCall(GameUi.Require("UI", "UIHelper"), "GetRelicInfoConfigure", relicId);
+        name = config == null ? "" : NameTable.BaseName(Local(config.Get<int>("NameID"), "Relic"));
+        return ChipNames[relicId] = name;
     }
 
     internal static int? ExportNames(string path)

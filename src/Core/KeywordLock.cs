@@ -21,13 +21,23 @@ public static class KeywordLock
 
     public static IReadOnlySet<Keyword> Owned(IEnumerable<Keyword> keywords) => keywords.Where(k => k != Keyword.None).ToHashSet();
 
-    public static string? Warning(IReadOnlySet<Keyword> owned, Keyword chip)
+    public const int MaxCoreNames = 4;
+
+    // core는 이 캐릭터·상황에서 코어로 판정되는 칩이다. 딜러·서포터를 오가는 캐릭터도 있어
+    // 키워드를 미리 비추 처리하지 않고, 고르는 순간 잃게 되는 코어 칩만 알려 준다.
+    public static string? Warning(IReadOnlySet<Keyword> owned, Keyword chip, IEnumerable<(string Name, Keyword Keyword)>? core = null)
     {
         if (chip == Keyword.None || owned.Contains(chip) || owned.Count != Limit - 1) return null;
         var kept = owned.Append(chip).OrderBy(k => k).Select(Name).ToList();
-        var lost = All.Where(k => k != chip && !owned.Contains(k)).Select(Name);
-        var last = kept[^1];
-        return $"고르면 키워드가 {string.Join("·", kept)}{Josa(last)} 고정되어 {string.Join("·", lost)} 칩이 더 나오지 않음";
+        var lost = All.Where(k => k != chip && !owned.Contains(k)).ToList();
+        var text = $"고르면 키워드가 {string.Join("·", kept)}{Josa(kept[^1])} 고정되어 {string.Join("·", lost.Select(Name))} 칩이 더 나오지 않음";
+
+        var blocked = (core ?? Enumerable.Empty<(string Name, Keyword Keyword)>())
+            .Where(c => lost.Contains(c.Keyword) && c.Name.Length > 0)
+            .Select(c => c.Name).Distinct().ToList();
+        if (blocked.Count == 0) return text;
+        var names = string.Join("·", blocked.Take(MaxCoreNames)) + (blocked.Count > MaxCoreNames ? " 등" : "");
+        return $"{text}. 이 캐릭터의 코어 칩 {names}도 막힘";
     }
 
     // 받침이 없거나 ㄹ 받침이면 "로", 그 밖의 받침이면 "으로".

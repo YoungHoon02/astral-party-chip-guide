@@ -32,4 +32,22 @@ public class KeywordLockTests
         Assert.Null(KeywordLock.Warning(Owned(Keyword.None), Keyword.Cure));
         Assert.Null(KeywordLock.Warning(Owned(Keyword.Cure, Keyword.Mark), Keyword.Cure));
     }
+
+    [Fact]
+    public void 막히는_키워드의_코어_칩을_함께_알린다()
+    {
+        var core = new[] { ("휴대용 선풍기", Keyword.Mark), ("닌자 수리검", Keyword.Mark), ("휴대용 선풍기", Keyword.Mark), ("비타민 알약", Keyword.Cure) };
+
+        var warning = KeywordLock.Warning(Owned(Keyword.Cure), Keyword.Salary, core);
+
+        Assert.EndsWith(". 이 캐릭터의 코어 칩 휴대용 선풍기·닌자 수리검도 막힘", warning);
+    }
+
+    [Fact]
+    public void 막히는_코어_칩이_없으면_키워드만_알린다()
+    {
+        var warning = KeywordLock.Warning(Owned(Keyword.Cure), Keyword.Mark, new[] { ("비타민 알약", Keyword.Cure), ("ATM기", Keyword.Mark) });
+
+        Assert.Equal("고르면 키워드가 회복·표식으로 고정되어 별빛·에너지 칩이 더 나오지 않음", warning);
+    }
 }
