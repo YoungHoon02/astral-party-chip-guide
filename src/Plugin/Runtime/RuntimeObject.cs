@@ -20,14 +20,9 @@ internal sealed unsafe class RuntimeObject
 
     internal static IntPtr FindClass(string ns, string name) => Meta.Class(ns, name);
 
-    internal static RuntimeObject? StaticField(IntPtr klass, string name)
-    {
-        var field = Meta.Field(klass, name);
-        Meta.RequireReference(IL2CPP.il2cpp_field_get_type(field), name);
-        IntPtr value;
-        IL2CPP.il2cpp_field_static_get_value(field, &value);
-        return Of(value);
-    }
+    // 값 형식 필드(열거형 등)는 박싱된 객체로 돌려받는다.
+    internal static RuntimeObject? StaticField(IntPtr klass, string name) =>
+        Of(IL2CPP.il2cpp_field_get_value_object(Meta.Field(klass, name), IntPtr.Zero));
 
     internal static RuntimeObject? StaticCall(IntPtr klass, string method, params object?[] args) =>
         Of(Invoke(klass, IntPtr.Zero, method, args));
