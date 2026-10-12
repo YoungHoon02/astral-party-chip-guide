@@ -6,3 +6,4 @@ obj/
 .claude/worktrees/
 dist/
 .private/
+Directory.Build.local.props

@@ -23,6 +23,10 @@
     <Reference Include="UnityEngine.UI"><HintPath>$(BepInExDir)\interop\UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 
+  <Target Name="RequireBepInExDir" BeforeTargets="ResolveAssemblyReferences" Condition="!Exists('$(BepInExDir)\core\BepInEx.Core.dll')">
+    <Error Text="BepInEx 폴더를 찾지 못했습니다. Directory.Build.local.props.example을 Directory.Build.local.props로 복사해 BepInExDir을 게임의 BepInEx 폴더로 고치거나, 환경 변수 ASTRAL_PARTY_BEPINEX를 설정하세요. (현재 값: '$(BepInExDir)')" />
+  </Target>
+
   <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true'">
     <Copy SourceFiles="$(TargetPath);$(TargetDir)ChipGuide.Core.dll" DestinationFolder="$(PluginDeployDir)" />
     <Copy SourceFiles="$(MSBuildProjectDirectory)\..\..\rules\rules.json" DestinationFolder="$(PluginDeployDir)" Condition="!Exists('$(PluginDeployDir)\rules.json')" />

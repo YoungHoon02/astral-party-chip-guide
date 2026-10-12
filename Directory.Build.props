@@ -1,9 +1,10 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.local.props" Condition="Exists('$(MSBuildThisFileDirectory)Directory.Build.local.props')" />
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
-    <BepInExDir Condition="'$(BepInExDir)' == ''">D:\SteamLibrary\steamapps\common\Astral Party\8vJXnINT\BepInEx</BepInExDir>
+    <BepInExDir Condition="'$(BepInExDir)' == ''">$(ASTRAL_PARTY_BEPINEX)</BepInExDir>
   </PropertyGroup>
 </Project>

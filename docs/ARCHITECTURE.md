@@ -61,6 +61,14 @@ publish-release.ps1 ─ 게시된 ZIP을 받아 sha256·크기 측정 ─> distr
 - **인덱스를 믿지 않는다** (`src/Updater/ReleaseIndex.cs`, 테스트 `ReleaseIndexTests` U1~U5). `schemaVersion`이 1이 아니거나, `downloadUrl`이 버전으로 다시 만든 주소(`…/releases/download/v<버전>/AstralPartyChipGuide-v<버전>.zip`)와 글자 단위로 다르거나, `sha256`이 64자리 16진수가 아니거나, 크기가 0 이하면 알리지 않는다. 응답은 64KB까지만 읽는다. 여는 주소는 인덱스가 아니라 코드에 고정한 `releases/latest`다.
 - 어셈블리 버전은 `0.1.0.0`이고 인덱스는 `0.1.0`이라 네 번째 자리를 버리고 비교한다.
 
+### 빌드 환경
+
+플러그인은 게임의 BepInEx 폴더에 있는 DLL을 참조한다. 경로는 저장소에 넣지 않는다.
+
+- `Directory.Build.local.props.example`을 `Directory.Build.local.props`로 복사하고 `BepInExDir`을 자기 게임의 `...\Astral Party\8vJXnINT\BepInEx`로 고친다. 이 파일은 git이 무시한다.
+- 또는 환경 변수 `ASTRAL_PARTY_BEPINEX`에 같은 경로를 넣는다.
+- 경로가 없거나 틀리면 빌드가 이유를 알려 주며 멈춘다. `-p:DeployToGame=true`를 붙이면 빌드 결과를 그 폴더의 `plugins\AstralPartyChipGuide\`에 복사한다.
+
 ### 릴리스 절차
 
 1. `src/Plugin/ChipGuide.Plugin.csproj`의 `<Version>`과 `Plugin.cs`의 `Version`을 함께 올린다. 다르면 스크립트가 멈춘다.
