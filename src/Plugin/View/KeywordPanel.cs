@@ -94,39 +94,43 @@ internal static class KeywordPanel
 
     private static RuntimeObject Build()
     {
-        var lines = new List<(string Text, Color Ink, IReadOnlyList<ChipIcon> Chips, bool Grayed)> { ("키워드 (2종까지)", OpenInk, Array.Empty<ChipIcon>(), false) };
-        lines.AddRange(_rows.Select(Line));
+        var segments = new List<(string Text, Color Ink, IReadOnlyList<ChipIcon> Chips, bool Grayed)> { ("키워드 (2종까지)", OpenInk, Array.Empty<ChipIcon>(), false) };
+        segments.AddRange(_rows.Select(Line));
 
         var panel = RuntimeObject.New(GameUi.Require("FairyGUI", "GComponent"));
         try
         {
             var padding = _textSize * 0.6f;
-            var labels = lines.Select(line => Ui.Text(line.Text, _textSize, line.Ink, 0f, wrap: false)).ToList();
+            var labels = segments.Select(segment => Ui.Text(segment.Text, _textSize, segment.Ink, 0f, wrap: false)).ToList();
             var lineHeight = labels.Max(label => label.Get<float>("height"));
-            var textWidth = labels.Max(label => label.Get<float>("width"));
             var iconSize = lineHeight * 0.9f;
-            var iconStart = padding + textWidth + padding;
-            var width = lines.Max(line => line.Chips.Count == 0 ? padding + textWidth : iconStart + line.Chips.Count * (iconSize + 2f)) + padding;
-            var height = lineHeight * labels.Count + padding * 2;
+            var height = lineHeight + padding * 2;
 
-            panel.Call("AddChild", Ui.Graph(width, height, Background, padding));
+            var x = padding * 1.5f;
             for (var i = 0; i < labels.Count; i++)
             {
-                var y = padding + lineHeight * i;
-                labels[i].Call("SetXY", padding, y);
+                if (i > 0) x += padding * 2;
+                labels[i].Call("SetXY", x, padding);
                 panel.Call("AddChild", labels[i]);
-                for (var c = 0; c < lines[i].Chips.Count; c++)
+                x += labels[i].Get<float>("width");
+                foreach (var chip in segments[i].Chips)
                 {
-                    var chip = lines[i].Chips[c];
-                    var icon = ChipIconLoader(chip.Icon, iconSize, lines[i].Grayed);
-                    icon.Call("SetXY", iconStart + c * (iconSize + 2f), y + (lineHeight - iconSize) / 2);
+                    x += 2f;
+                    var icon = ChipIconLoader(chip.Icon, iconSize, segments[i].Grayed);
+                    icon.Call("SetXY", x, padding + (lineHeight - iconSize) / 2);
                     panel.Call("AddChild", icon);
                     Icons.Add((icon, chip.Name));
+                    x += iconSize;
                 }
             }
+            var width = x + padding * 1.5f;
+            panel.Call("AddChildAt", Ui.Graph(width, height, Background, height / 2), 0);
             panel.Call("SetSize", width, height);
-            panel.Call("SetXY", padding, padding);
-            _container!.Call("AddChild", panel);
+
+            var containerWidth = _container!.Get<float>("width");
+            var top = TitleTop(_container) is { } title ? title - height - padding * 0.5f : padding;
+            panel.Call("SetXY", Math.Max(padding, (containerWidth - width) / 2), Math.Max(0f, top));
+            _container.Call("AddChild", panel);
             return panel;
         }
         catch
@@ -134,6 +138,30 @@ internal static class KeywordPanel
             GameUi.Dispose(panel);
             Icons.Clear();
             throw;
+        }
+    }
+
+    // 창 제목("강화칩을 선택해주세요")은 이름 없는 글자 요소라, 칩 목록보다 위에 있는 글자 중 가장 위의 것을 제목으로 본다.
+    private static float? TitleTop(RuntimeObject container)
+    {
+        try
+        {
+            var listTop = container.Field("list_Relic")?.Get<float>("y") ?? float.MaxValue;
+            float? top = null;
+            var count = container.Get<int>("numChildren");
+            for (var i = 0; i < count; i++)
+            {
+                var child = container.Call("GetChildAt", i);
+                if (child == null || child.TypeName is not ("GTextField" or "GRichTextField") || !child.Get<bool>("visible")) continue;
+                var y = child.Get<float>("y");
+                if (y < listTop && (top == null || y < top)) top = y;
+            }
+            return top;
+        }
+        catch (Exception ex)
+        {
+            Plugin.Logger.LogWarning($"칩 선택 창 제목 위치를 읽지 못해 창 맨 위에 둡니다: {ex.Message}");
+            return null;
         }
     }
 
