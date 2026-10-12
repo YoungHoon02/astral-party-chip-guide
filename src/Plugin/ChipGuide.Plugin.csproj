@@ -4,7 +4,7 @@
     <AssemblyName>AstralPartyChipGuide</AssemblyName>
     <RootNamespace>ChipGuide.Plugin</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>0.1.1</Version>
+    <Version>0.1.0</Version>
     <PluginDeployDir>$(BepInExDir)\plugins\AstralPartyChipGuide</PluginDeployDir>
   </PropertyGroup>
 
