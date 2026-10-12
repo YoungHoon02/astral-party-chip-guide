@@ -43,6 +43,8 @@ PvE에서만 동작합니다. PvP와 관전·리플레이에서는 표시하지 
 
 `rules.json`을 텍스트 편집기로 열어 고칩니다. 캐릭터별 추천, 맵·아군·보유 칩 조건, 이유 문구를 쓰는 법은 [docs/RULES.md](docs/RULES.md)에 있습니다. 문법 오류가 있으면 직전 정상 규칙이 유지되고 로그에 위치가 남습니다.
 
+배지가 어떤 근거와 순서로 정해지는지는 [docs/RECOMMENDATION.md](docs/RECOMMENDATION.md)에 공개해 두었습니다. 틀린 판정이나 빠진 조합을 발견하면 [이슈](https://github.com/YoungHoon02/astral-party-chip-guide/issues)로 알려 주세요.
+
 개발자용 구조 설명은 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)를 보세요.
 
 ## 출처와 감사
