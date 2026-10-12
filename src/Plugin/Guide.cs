@@ -135,7 +135,7 @@ internal static class Guide
             : null;
         var warnings = infos.Select(info => warn ? KeywordLock.Warning(owned, info.Keyword, core) : null).ToList();
         var panel = Plugin.KeywordPanel.Value
-            ? KeywordLock.Keywords.Select(k => new KeywordRow(k, KeywordLock.State(owned, k), ownedKeywords.Count(o => o == k))).ToList()
+            ? KeywordLock.Keywords.Select(k => new KeywordRow(k, KeywordLock.State(owned, k), ownedKeywords.Count(o => o == k), GameTables.KeywordChips(k, situation.MapId))).ToList()
             : null;
         BadgeView.Show(screen.Container,
             screen.Cards.Select((card, i) => (card.Item, advice[i], warnings[i], warn ? KeywordLock.WouldLock(owned, infos[i].Keyword) : NoKeywords)).ToList(),

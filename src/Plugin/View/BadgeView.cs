@@ -42,6 +42,7 @@ internal static class BadgeView
 
     internal static void UpdateHover(RuntimeObject root)
     {
+        KeywordPanel.UpdateHover(root);
         var hovered = Badges.FirstOrDefault(badge => GameUi.IsUnderPointer(root, badge.Item));
         KeywordPanel.Preview(hovered?.WouldLock ?? NoKeywords);
         if (hovered == null)

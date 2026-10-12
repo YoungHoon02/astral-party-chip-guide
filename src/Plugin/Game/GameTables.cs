@@ -5,6 +5,8 @@ using ChipGuide.Plugin.Runtime;
 
 namespace ChipGuide.Plugin.Game;
 
+internal sealed record ChipIcon(string Name, string Icon);
+
 internal static class GameTables
 {
     // UIStringType 정적 필드를 읽지 못할 때 쓰는 값이다. 선언 순서로 계산했고,
@@ -13,6 +15,7 @@ internal static class GameTables
     private static readonly Dictionary<string, int> StringTypes = new();
     private static readonly HashSet<string> FailedFields = new();
     private static readonly Dictionary<int, string> ChipNames = new();
+    private static Dictionary<Keyword, List<(ChipIcon Chip, List<int> Maps)>>? _keywordChips;
 
     internal static (Grade Grade, Keyword Keyword) ChipInfo(int relicId)
     {
@@ -29,6 +32,33 @@ internal static class GameTables
         var config = RuntimeObject.StaticCall(GameUi.Require("UI", "UIHelper"), "GetRelicInfoConfigure", relicId);
         name = config == null ? "" : NameTable.BaseName(Local(config.Get<int>("NameID"), "Relic"));
         return ChipNames[relicId] = name;
+    }
+
+    // 등급만 다른 칩은 하나로 합친다. 설정 테이블은 실행 중 바뀌지 않아 한 번만 읽는다.
+    internal static IReadOnlyList<ChipIcon> KeywordChips(Keyword keyword, int mapId)
+    {
+        _keywordChips ??= LoadKeywordChips();
+        if (_keywordChips == null || !_keywordChips.TryGetValue(keyword, out var chips)) return Array.Empty<ChipIcon>();
+        return chips.Where(c => c.Maps.Count == 0 || c.Maps.Contains(mapId)).Select(c => c.Chip).ToList();
+    }
+
+    private static Dictionary<Keyword, List<(ChipIcon Chip, List<int> Maps)>>? LoadKeywordChips()
+    {
+        var relics = Infos(GameUi.Require("", "StaticConfigure"), "get_Relic");
+        if (relics == null) return null;
+        var result = new Dictionary<Keyword, List<(ChipIcon, List<int>)>>();
+        var seen = new HashSet<string>();
+        foreach (var chip in Items(relics))
+        {
+            var keyword = chip.Get<int>("KeyWordType");
+            if (keyword is < 1 or > 4) continue;
+            var name = NameTable.BaseName(Local(chip.Get<int>("NameID"), "Relic"));
+            var icon = chip.Get("Icon")?.String() ?? "";
+            if (name.Length == 0 || icon.Length == 0 || !seen.Add(name)) continue;
+            if (!result.TryGetValue((Keyword)keyword, out var list)) result[(Keyword)keyword] = list = new();
+            list.Add((new ChipIcon(name, icon), Ints(chip, "MapLimit", "chip")));
+        }
+        return result.Count == 0 ? null : result;
     }
 
     internal static int? ExportNames(string path)
