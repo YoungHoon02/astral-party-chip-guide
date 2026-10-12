@@ -25,7 +25,7 @@ public sealed class RuleSource
             var namesJson = _readNames();
             if (namesJson is null)
             {
-                _log("names.json이 없습니다. 게임에서 템플릿 생성 키(기본 F10)를 눌러 만드세요.");
+                _log("names.json이 아직 없습니다. 로비에 들어가면 자동으로 만들어집니다.");
                 return false;
             }
             var rulesJson = _readRules();

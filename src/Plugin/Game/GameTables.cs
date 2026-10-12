@@ -119,9 +119,12 @@ internal static class GameTables
 
         if (chipCount == 0 || heroCount == 0 || mapCount == 0) return null;
 
+        // 내용이 같으면 쓰지 않아야 파일 시각이 바뀌지 않고 규칙을 괜히 다시 읽지 않는다.
+        var bytes = buffer.ToArray();
+        if (File.Exists(path) && File.ReadAllBytes(path).AsSpan().SequenceEqual(bytes)) return chipCount;
         // 규칙 다시 읽기가 반쯤 쓰인 파일을 읽지 않도록 임시 파일을 쓴 뒤 바꿔 넣는다.
         var temp = path + ".tmp";
-        File.WriteAllBytes(temp, buffer.ToArray());
+        File.WriteAllBytes(temp, bytes);
         File.Move(temp, path, overwrite: true);
         if (FailedFields.Count > 0)
             Plugin.Logger.LogWarning($"참고용 필드를 읽지 못해 기본값을 썼습니다: {string.Join(", ", FailedFields)}");
