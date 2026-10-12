@@ -12,22 +12,29 @@ internal static class BadgeView
     private const string WarningMark = "※";
     private static readonly Color WarningFill = new(0.93f, 0.55f, 0.13f, 0.95f), WarningInk = new(0.1f, 0.1f, 0.1f, 1f);
 
-    private sealed record Badge(RuntimeObject Item, RuntimeObject Pill, RuntimeObject Label, Advice? Advice, string? Warning, Vector2 PillSize, int TooltipText);
+    private sealed record Badge(RuntimeObject Item, RuntimeObject Pill, RuntimeObject Label, Advice? Advice, string? Warning, IReadOnlySet<Keyword> WouldLock, Vector2 PillSize, int TooltipText);
 
     private static readonly List<Badge> Badges = new();
     private static RuntimeObject? _container;
     private static RuntimeObject? _tooltip;
     private static IntPtr _tooltipFor;
+    private static readonly IReadOnlySet<Keyword> NoKeywords = new HashSet<Keyword>();
 
-    internal static bool Showing => Badges.Count > 0;
+    internal static bool Showing => Badges.Count > 0 || KeywordPanel.Alive;
 
-    internal static void Show(RuntimeObject container, IReadOnlyList<(RuntimeObject Item, Advice? Advice, string? Warning)> cards)
+    internal static void Show(RuntimeObject container, IReadOnlyList<(RuntimeObject Item, Advice? Advice, string? Warning, IReadOnlySet<Keyword> WouldLock)> cards,
+        IReadOnlyList<KeywordRow>? keywords)
     {
         // 카드 객체는 창·리롤마다 재사용되므로 이전 배지를 먼저 걷어내야 겹쳐 붙지 않는다.
         Clear();
         _container = container;
-        foreach (var (item, advice, warning) in cards)
-            if (advice != null || warning != null) Badges.Add(CreateBadge(item, advice, warning));
+        foreach (var (item, advice, warning, wouldLock) in cards)
+            if (advice != null || warning != null) Badges.Add(CreateBadge(item, advice, warning, wouldLock));
+        if (keywords != null && cards.Count > 0)
+        {
+            var title = TitleSize(cards[0].Item);
+            KeywordPanel.Show(container, keywords, title > 0 ? (int)Math.Round(title * 0.7f) : FallbackTooltipText);
+        }
     }
 
     internal static bool StillAttached() =>
@@ -36,6 +43,7 @@ internal static class BadgeView
     internal static void UpdateHover(RuntimeObject root)
     {
         var hovered = Badges.FirstOrDefault(badge => GameUi.IsUnderPointer(root, badge.Item));
+        KeywordPanel.Preview(hovered?.WouldLock ?? NoKeywords);
         if (hovered == null)
         {
             HideTooltip();
@@ -50,6 +58,8 @@ internal static class BadgeView
     internal static void Clear()
     {
         HideTooltip();
+        try { KeywordPanel.Clear(); }
+        catch (Exception ex) { Plugin.Logger.LogWarning($"키워드 패널을 정리하지 못했습니다: {ex.Message}"); }
         var failed = false;
         try
         {
@@ -116,7 +126,7 @@ internal static class BadgeView
 
     private static float Fit(float x, float max) => Math.Max(0f, Math.Min(x, max));
 
-    private static Badge CreateBadge(RuntimeObject item, Advice? advice, string? warning)
+    private static Badge CreateBadge(RuntimeObject item, Advice? advice, string? warning, IReadOnlySet<Keyword> wouldLock)
     {
         var title = TitleSize(item);
         var textSize = title > 0 ? (int)Math.Round(title * 0.75f) : FallbackBadgeText;
@@ -136,7 +146,7 @@ internal static class BadgeView
             host.Call("AddChild", pill);
             label.Call("SetXY", origin.x + (size.x - label.Get<float>("width")) / 2, origin.y + (size.y - label.Get<float>("height")) / 2);
             host.Call("AddChild", label);
-            return new Badge(item, pill, label, advice, warning, size, tooltipText);
+            return new Badge(item, pill, label, advice, warning, wouldLock, size, tooltipText);
         }
         catch
         {

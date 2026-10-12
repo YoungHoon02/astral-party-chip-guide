@@ -50,4 +50,25 @@ public class KeywordLockTests
 
         Assert.Equal("고르면 키워드가 회복·표식으로 고정되어 별빛·에너지 칩이 더 나오지 않음", warning);
     }
+
+    [Fact]
+    public void 키워드_상태는_보유_열림_막힘으로_나뉜다()
+    {
+        var one = Owned(Keyword.Salary);
+        var two = Owned(Keyword.Salary, Keyword.Mark);
+
+        Assert.Equal(KeywordState.Owned, KeywordLock.State(one, Keyword.Salary));
+        Assert.Equal(KeywordState.Open, KeywordLock.State(one, Keyword.Cure));
+        Assert.Equal(KeywordState.Owned, KeywordLock.State(two, Keyword.Mark));
+        Assert.Equal(KeywordState.Locked, KeywordLock.State(two, Keyword.Energy));
+    }
+
+    [Fact]
+    public void 고르면_막히는_키워드는_두번째_키워드를_고를_때만_생긴다()
+    {
+        Assert.Equal(new[] { Keyword.Cure, Keyword.Energy }, KeywordLock.WouldLock(Owned(Keyword.Salary), Keyword.Mark).OrderBy(k => k));
+        Assert.Empty(KeywordLock.WouldLock(Owned(), Keyword.Mark));
+        Assert.Empty(KeywordLock.WouldLock(Owned(Keyword.Salary), Keyword.Salary));
+        Assert.Empty(KeywordLock.WouldLock(Owned(Keyword.Salary, Keyword.Mark), Keyword.Cure));
+    }
 }

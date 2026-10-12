@@ -16,6 +16,7 @@ internal static class Guide
     private static RuleSource _rules = null!;
     private static float _nextScan, _nextFileCheck, _nextNamesTry;
     private static bool _namesSynced;
+    private static readonly IReadOnlySet<Keyword> NoKeywords = new HashSet<Keyword>();
     private static string _signature = "";
     private static bool _pve;
 
@@ -126,13 +127,19 @@ internal static class Guide
         var infos = screen.Cards.Select(card => GameTables.ChipInfo(card.RelicId)).ToList();
         var options = screen.Cards.Select((card, i) => new ChipOption(card.RelicId, infos[i].Grade)).ToList();
         var advice = ChipAdvisor.Advise(_rules.Current, situation, options);
-        var owned = KeywordLock.Owned(situation.OwnedRelics.Select(id => GameTables.ChipInfo(id).Keyword));
+        var ownedKeywords = situation.OwnedRelics.Select(id => GameTables.ChipInfo(id).Keyword).ToList();
+        var owned = KeywordLock.Owned(ownedKeywords);
         var warn = Plugin.KeywordWarning.Value;
         var core = warn && owned.Count == KeywordLock.Limit - 1
             ? ChipAdvisor.CoreChips(_rules.Current, situation).Select(id => (GameTables.ChipName(id), GameTables.ChipInfo(id).Keyword)).ToList()
             : null;
         var warnings = infos.Select(info => warn ? KeywordLock.Warning(owned, info.Keyword, core) : null).ToList();
-        BadgeView.Show(screen.Container, screen.Cards.Select((card, i) => (card.Item, advice[i], warnings[i])).ToList());
+        var panel = Plugin.KeywordPanel.Value
+            ? KeywordLock.Keywords.Select(k => new KeywordRow(k, KeywordLock.State(owned, k), ownedKeywords.Count(o => o == k))).ToList()
+            : null;
+        BadgeView.Show(screen.Container,
+            screen.Cards.Select((card, i) => (card.Item, advice[i], warnings[i], warn ? KeywordLock.WouldLock(owned, infos[i].Keyword) : NoKeywords)).ToList(),
+            panel);
         _signature = signature;
 
         if (Plugin.Diagnostics.Value)
