@@ -107,14 +107,18 @@ internal static class Guide
             return;
         }
 
-        var options = screen.Cards.Select(card => new ChipOption(card.RelicId, GameTables.GradeOf(card.RelicId))).ToList();
+        var infos = screen.Cards.Select(card => GameTables.ChipInfo(card.RelicId)).ToList();
+        var options = screen.Cards.Select((card, i) => new ChipOption(card.RelicId, infos[i].Grade)).ToList();
         var advice = ChipAdvisor.Advise(_rules.Current, situation, options);
-        BadgeView.Show(screen.Container, screen.Cards.Select((card, i) => (card.Item, advice[i])).ToList());
+        var owned = KeywordLock.Owned(situation.OwnedRelics.Select(id => GameTables.ChipInfo(id).Keyword));
+        var warnings = infos.Select(info => Plugin.KeywordWarning.Value ? KeywordLock.Warning(owned, info.Keyword) : null).ToList();
+        BadgeView.Show(screen.Container, screen.Cards.Select((card, i) => (card.Item, advice[i], warnings[i])).ToList());
         _signature = signature;
 
         if (Plugin.Diagnostics.Value)
             Plugin.Logger.LogInfo($"[진단] 캐릭터={situation.HeroId} 보유={string.Join(",", situation.OwnedRelics)} 아군={string.Join(",", situation.AllyHeroes)} 맵={situation.MapId} "
-                + $"판정={string.Join(" / ", options.Select((o, i) => $"{o.RelicId}({o.Grade})={advice[i]?.Verdict.ToString() ?? "없음"}"))}");
+                + $"보유 키워드={string.Join(",", owned)} "
+                + $"판정={string.Join(" / ", options.Select((o, i) => $"{o.RelicId}({o.Grade},{infos[i].Keyword})={advice[i]?.Verdict.ToString() ?? "없음"}{(warnings[i] != null ? "+키워드경고" : "")}"))}");
     }
 
     private static void Hide()

@@ -13,11 +13,13 @@ internal static class GameTables
     private static readonly Dictionary<string, int> StringTypes = new();
     private static readonly HashSet<string> FailedFields = new();
 
-    internal static Grade GradeOf(int relicId)
+    internal static (Grade Grade, Keyword Keyword) ChipInfo(int relicId)
     {
         var config = RuntimeObject.StaticCall(GameUi.Require("UI", "UIHelper"), "GetRelicInfoConfigure", relicId);
-        var value = config?.Get<int>("RelicQualityType") ?? 0;
-        return value is >= 1 and <= 3 ? (Grade)value : Grade.None;
+        if (config == null) return (Grade.None, Keyword.None);
+        var grade = config.Get<int>("RelicQualityType");
+        var keyword = config.Get<int>("KeyWordType");
+        return (grade is >= 1 and <= 3 ? (Grade)grade : Grade.None, keyword is >= 1 and <= 4 ? (Keyword)keyword : Keyword.None);
     }
 
     internal static int? ExportNames(string path)

@@ -8,8 +8,11 @@ internal static class BadgeView
 {
     private const int FallbackBadgeText = 16, FallbackTooltipText = 15;
     private const float FallbackTooltipWidth = 300f;
+    // ⚠는 게임 글꼴에 없을 수 있어 CJK 글꼴에 흔한 ※를 쓴다.
+    private const string WarningMark = "※";
+    private static readonly Color WarningFill = new(0.93f, 0.55f, 0.13f, 0.95f), WarningInk = new(0.1f, 0.1f, 0.1f, 1f);
 
-    private sealed record Badge(RuntimeObject Item, RuntimeObject Pill, RuntimeObject Label, Advice Advice, Vector2 PillSize, int TooltipText);
+    private sealed record Badge(RuntimeObject Item, RuntimeObject Pill, RuntimeObject Label, Advice? Advice, string? Warning, Vector2 PillSize, int TooltipText);
 
     private static readonly List<Badge> Badges = new();
     private static RuntimeObject? _container;
@@ -18,13 +21,13 @@ internal static class BadgeView
 
     internal static bool Showing => Badges.Count > 0;
 
-    internal static void Show(RuntimeObject container, IReadOnlyList<(RuntimeObject Item, Advice? Advice)> cards)
+    internal static void Show(RuntimeObject container, IReadOnlyList<(RuntimeObject Item, Advice? Advice, string? Warning)> cards)
     {
         // 카드 객체는 창·리롤마다 재사용되므로 이전 배지를 먼저 걷어내야 겹쳐 붙지 않는다.
         Clear();
         _container = container;
-        foreach (var (item, advice) in cards)
-            if (advice != null) Badges.Add(CreateBadge(item, advice));
+        foreach (var (item, advice, warning) in cards)
+            if (advice != null || warning != null) Badges.Add(CreateBadge(item, advice, warning));
     }
 
     internal static bool StillAttached() =>
@@ -113,14 +116,15 @@ internal static class BadgeView
 
     private static float Fit(float x, float max) => Math.Max(0f, Math.Min(x, max));
 
-    private static Badge CreateBadge(RuntimeObject item, Advice advice)
+    private static Badge CreateBadge(RuntimeObject item, Advice? advice, string? warning)
     {
         var title = TitleSize(item);
         var textSize = title > 0 ? (int)Math.Round(title * 0.75f) : FallbackBadgeText;
         var tooltipText = title > 0 ? (int)Math.Round(title * 0.7f) : FallbackTooltipText;
         var inset = textSize * 0.4f;
 
-        var (text, fill, ink) = Style(advice.Verdict);
+        var (text, fill, ink) = advice == null ? (WarningMark + " 키워드", WarningFill, WarningInk) : Style(advice.Verdict);
+        if (advice != null && warning != null) text += " " + WarningMark;
         var label = Ui.Text(text, textSize, ink, 0f, wrap: false);
         RuntimeObject? pill = null;
         try
@@ -132,7 +136,7 @@ internal static class BadgeView
             host.Call("AddChild", pill);
             label.Call("SetXY", origin.x + (size.x - label.Get<float>("width")) / 2, origin.y + (size.y - label.Get<float>("height")) / 2);
             host.Call("AddChild", label);
-            return new Badge(item, pill, label, advice, size, tooltipText);
+            return new Badge(item, pill, label, advice, warning, size, tooltipText);
         }
         catch
         {
@@ -144,8 +148,13 @@ internal static class BadgeView
 
     private static RuntimeObject CreateTooltip(Badge badge)
     {
-        var lines = new List<string> { $"{Symbol(badge.Advice.Verdict)} {badge.Advice.Reason}" };
-        lines.AddRange(badge.Advice.Notes.Select(note => $"참고: {Symbol(note.Verdict)} {note.Why}"));
+        var lines = new List<string>();
+        if (badge.Advice is { } advice)
+        {
+            lines.Add($"{Symbol(advice.Verdict)} {advice.Reason}");
+            lines.AddRange(advice.Notes.Select(note => $"참고: {Symbol(note.Verdict)} {note.Why}"));
+        }
+        if (badge.Warning != null) lines.Add($"{WarningMark} {badge.Warning}");
 
         var container = _container!;
         var containerSize = new Vector2(container.Get<float>("width"), container.Get<float>("height"));

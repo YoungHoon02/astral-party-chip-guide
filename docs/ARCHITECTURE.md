@@ -24,6 +24,7 @@ TemplateTool  설정 키를 누르면 게임의 칩·캐릭터·맵 테이블을
 | PvE 게이트 | PvE 여부 판정 | `src/Plugin/Game/PveGate.cs` |
 | TemplateTool | 게임 테이블을 `names.json`으로 출력 | `src/Plugin/Game/GameTables.cs` |
 | ChipAdvisor | 판정 계산 (게임 의존 없음) | `src/Core/ChipAdvisor.cs` |
+| KeywordLock | 키워드 고정 경고 문구. 규칙 파일과 별개로 칩의 `KeyWordType`만으로 판단 | `src/Core/KeywordLock.cs` |
 | RuleBook / RuleSource | 규칙 해석·검증, 실패 시 이전 규칙 유지 | `src/Core/RuleBook.cs`, `RuleSource.cs` |
 | NameTable | 이름 ↔ ID 변환 | `src/Core/NameTable.cs` |
 | BadgeView | 배지·툴팁 표시와 제거, 호버 판정 | `src/Plugin/View/BadgeView.cs` |

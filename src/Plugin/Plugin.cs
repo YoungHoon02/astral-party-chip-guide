@@ -19,6 +19,7 @@ public sealed class Plugin : BasePlugin
     internal static string Folder { get; private set; } = "";
     internal static ConfigEntry<bool> Enabled { get; private set; } = null!;
     internal static ConfigEntry<KeyCode> TemplateKey { get; private set; } = null!;
+    internal static ConfigEntry<bool> KeywordWarning { get; private set; } = null!;
     internal static ConfigEntry<bool> Diagnostics { get; private set; } = null!;
 
     public override void Load()
@@ -27,6 +28,7 @@ public sealed class Plugin : BasePlugin
         Folder = Path.GetDirectoryName(typeof(Plugin).Assembly.Location)!;
         Enabled = Config.Bind("일반", "활성화", true, "칩 선택 창에 판정 배지를 표시합니다.");
         TemplateKey = Config.Bind("일반", "템플릿 생성 키", KeyCode.F10, "누르면 게임의 칩·캐릭터·맵 테이블을 names.json으로 저장합니다.");
+        KeywordWarning = Config.Bind("일반", "키워드 고정 경고", true, "키워드 칩을 한 종류만 가졌을 때, 다른 키워드 칩을 고르면 나머지 두 키워드가 더 나오지 않는다고 알려 줍니다.");
         Diagnostics = Config.Bind("진단", "상세 로그", false, "칩 선택 창이 열릴 때 읽은 값을 로그에 남깁니다.");
         ConfigEntry<bool> checkRelease = Config.Bind("업데이트", "새 버전 확인", true,
             "게임을 켤 때 같은 폴더의 AstralPartyChipGuideUpdater.exe를 띄워 새 버전이 있는지 확인합니다. " +
