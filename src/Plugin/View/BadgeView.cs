@@ -44,7 +44,9 @@ internal static class BadgeView
     {
         KeywordPanel.UpdateHover(root);
         var hovered = Badges.FirstOrDefault(badge => GameUi.IsUnderPointer(root, badge.Item));
-        KeywordPanel.Preview(hovered?.WouldLock ?? NoKeywords);
+        // 패널의 칩 아이콘까지 마우스를 옮겨 이름을 볼 수 있도록, 패널 위에서는 미리보기를 유지하고 그 밖에서는 선택한 카드를 따른다.
+        if (hovered != null) KeywordPanel.Preview(hovered.WouldLock);
+        else if (!KeywordPanel.UnderPointer(root)) KeywordPanel.Preview(Badges.FirstOrDefault(badge => Selected(badge.Item))?.WouldLock ?? NoKeywords);
         if (hovered == null)
         {
             HideTooltip();
@@ -54,6 +56,12 @@ internal static class BadgeView
         HideTooltip();
         _tooltip = CreateTooltip(hovered);
         _tooltipFor = hovered.Item.Pointer;
+    }
+
+    private static bool Selected(RuntimeObject item)
+    {
+        try { return item.Get<bool>("selected"); }
+        catch { return false; }
     }
 
     internal static void Clear()

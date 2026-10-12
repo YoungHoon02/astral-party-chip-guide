@@ -44,6 +44,8 @@ internal static class KeywordPanel
         _panel = Build();
     }
 
+    internal static bool UnderPointer(RuntimeObject root) => Alive && GameUi.IsUnderPointer(root, _panel!);
+
     internal static void UpdateHover(RuntimeObject root)
     {
         if (!Alive) return;
@@ -124,7 +126,10 @@ internal static class KeywordPanel
                 }
             }
             var width = x + padding * 1.5f;
-            panel.Call("AddChildAt", Ui.Graph(width, height, Background, height / 2), 0);
+            var background = Ui.Graph(width, height, Background, height / 2);
+            // 배경도 터치를 받아야 아이콘 사이로 마우스가 지나가도 패널 위로 인식된다.
+            background.Set("touchable", true);
+            panel.Call("AddChildAt", background, 0);
             panel.Call("SetSize", width, height);
 
             var containerWidth = _container!.Get<float>("width");
