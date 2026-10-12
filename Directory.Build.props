@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <BepInExDir Condition="'$(BepInExDir)' == ''">D:\SteamLibrary\steamapps\common\Astral Party\8vJXnINT\BepInEx</BepInExDir>
+  </PropertyGroup>
+</Project>

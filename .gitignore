@@ -1,0 +1,8 @@
+bin/
+obj/
+*.user
+.vs/
+.superpowers/
+.claude/worktrees/
+dist/
+.private/
