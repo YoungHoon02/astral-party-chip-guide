@@ -4,6 +4,8 @@ using UnityEngine;
 
 namespace ChipGuide.Plugin.View;
 
+internal sealed record CardView(RuntimeObject Item, Advice? Advice, string? Warning, IReadOnlySet<Keyword> WouldLock, ChipRole Role);
+
 internal static class BadgeView
 {
     private const int FallbackBadgeText = 16, FallbackTooltipText = 15;
@@ -15,25 +17,31 @@ internal static class BadgeView
     private sealed record Badge(RuntimeObject Item, RuntimeObject Pill, RuntimeObject Label, Advice? Advice, string? Warning, IReadOnlySet<Keyword> WouldLock, Vector2 PillSize, int TooltipText);
 
     private static readonly List<Badge> Badges = new();
+    private static readonly List<RuntimeObject> RoleTags = new();
+    private static IReadOnlyList<CardView> _cards = Array.Empty<CardView>();
+    private static readonly Color RoleTagFill = new(0.04f, 0.05f, 0.07f, 0.8f), RoleTagInk = new(0.85f, 0.9f, 1f, 1f);
     private static RuntimeObject? _container;
     private static RuntimeObject? _tooltip;
     private static IntPtr _tooltipFor;
     private static readonly IReadOnlySet<Keyword> NoKeywords = new HashSet<Keyword>();
 
-    internal static bool Showing => Badges.Count > 0 || KeywordPanel.Alive;
+    internal static bool Showing => Badges.Count > 0 || RoleTags.Count > 0 || KeywordPanel.Alive;
 
-    internal static void Show(RuntimeObject container, IReadOnlyList<(RuntimeObject Item, Advice? Advice, string? Warning, IReadOnlySet<Keyword> WouldLock)> cards,
-        IReadOnlyList<KeywordRow>? keywords)
+    internal static void Show(RuntimeObject container, IReadOnlyList<CardView> cards, IReadOnlyList<KeywordRow>? keywords, RoleWeights? weights, bool roleTags)
     {
         // 카드 객체는 창·리롤마다 재사용되므로 이전 배지를 먼저 걷어내야 겹쳐 붙지 않는다.
         Clear();
         _container = container;
-        foreach (var (item, advice, warning, wouldLock) in cards)
-            if (advice != null || warning != null) Badges.Add(CreateBadge(item, advice, warning, wouldLock));
-        if (keywords != null && cards.Count > 0)
+        _cards = cards;
+        foreach (var card in cards)
+        {
+            if (card.Advice != null || card.Warning != null) Badges.Add(CreateBadge(card.Item, card.Advice, card.Warning, card.WouldLock));
+            if (roleTags && card.Role.Label() is { Length: > 0 } label && CreateRoleTag(card.Item, label) is { } tag) RoleTags.Add(tag);
+        }
+        if (cards.Count > 0)
         {
             var title = TitleSize(cards[0].Item);
-            KeywordPanel.Show(container, keywords, title > 0 ? (int)Math.Round(title * 0.7f) : FallbackTooltipText, IconClass(cards[0].Item));
+            KeywordPanel.Show(container, keywords, weights, title > 0 ? (int)Math.Round(title * 0.7f) : FallbackTooltipText, IconClass(cards[0].Item));
         }
     }
 
@@ -43,10 +51,11 @@ internal static class BadgeView
     internal static void UpdateHover(RuntimeObject root)
     {
         KeywordPanel.UpdateHover(root);
-        var hovered = Badges.FirstOrDefault(badge => GameUi.IsUnderPointer(root, badge.Item));
+        var card = _cards.FirstOrDefault(c => GameUi.IsUnderPointer(root, c.Item));
         // 패널의 칩 아이콘까지 마우스를 옮겨 이름을 볼 수 있도록, 패널 위에서는 미리보기를 유지하고 그 밖에서는 선택한 카드를 따른다.
-        if (hovered != null) KeywordPanel.Preview(hovered.WouldLock);
-        else if (!KeywordPanel.UnderPointer(root)) KeywordPanel.Preview(Badges.FirstOrDefault(badge => Selected(badge.Item))?.WouldLock ?? NoKeywords);
+        if (card == null && !KeywordPanel.UnderPointer(root)) card = _cards.FirstOrDefault(c => Selected(c.Item));
+        if (card != null || !KeywordPanel.UnderPointer(root)) KeywordPanel.Preview(card?.WouldLock ?? NoKeywords, card?.Role.Added ?? RoleWeights.Zero);
+        var hovered = Badges.FirstOrDefault(badge => GameUi.IsUnderPointer(root, badge.Item));
         if (hovered == null)
         {
             HideTooltip();
@@ -96,9 +105,46 @@ internal static class BadgeView
         }
         finally
         {
+            foreach (var tag in RoleTags)
+            {
+                try { GameUi.Dispose(tag); } catch { failed = true; }
+            }
             Badges.Clear();
+            RoleTags.Clear();
+            _cards = Array.Empty<CardView>();
             _container = null;
             if (failed) Plugin.Logger.LogWarning("일부 배지를 정리하지 못했습니다.");
+        }
+    }
+
+    // 칩 이름 바로 위 가운데에 역할군과 추가 가중치를 붙인다. 카드 애니메이션을 따라가도록 카드에 직접 붙인다.
+    private static RuntimeObject? CreateRoleTag(RuntimeObject item, string text)
+    {
+        var title = item.Field("txt_tltle");
+        if (title == null) return null;
+        var size = TitleSize(item);
+        var label = Ui.Text(text, size > 0 ? (int)Math.Round(size * 0.6f) : FallbackTooltipText, RoleTagInk, 0f, wrap: false);
+        var tag = RuntimeObject.New(GameUi.Require("FairyGUI", "GComponent"));
+        try
+        {
+            tag.Set("touchable", false);
+            var width = label.Get<float>("width");
+            var height = label.Get<float>("height");
+            var padding = height * 0.35f;
+            tag.Call("AddChild", Ui.Graph(width + padding * 2, height, RoleTagFill, height / 2));
+            label.Call("SetXY", padding, 0f);
+            tag.Call("AddChild", label);
+            tag.Call("SetSize", width + padding * 2, height);
+            var x = title.Get<float>("x") + (title.Get<float>("width") - width - padding * 2) / 2;
+            tag.Call("SetXY", x, title.Get<float>("y") - height - padding * 0.5f);
+            item.Call("AddChild", tag);
+            return tag;
+        }
+        catch
+        {
+            GameUi.Dispose(label);
+            GameUi.Dispose(tag);
+            throw;
         }
     }
 

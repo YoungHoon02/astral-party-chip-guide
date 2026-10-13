@@ -15,6 +15,8 @@ internal static class GameTables
     private static readonly Dictionary<string, int> StringTypes = new();
     private static readonly HashSet<string> FailedFields = new();
     private static readonly Dictionary<int, string> ChipNames = new();
+    private static readonly Dictionary<int, ChipRole> ChipRoles = new();
+    private static Dictionary<int, RuntimeObject>? _heroWeights;
     private static Dictionary<Keyword, List<(ChipIcon Chip, List<int> Maps)>>? _keywordChips;
 
     internal static (Grade Grade, Keyword Keyword) ChipInfo(int relicId)
@@ -24,6 +26,24 @@ internal static class GameTables
         var grade = config.Get<int>("RelicQualityType");
         var keyword = config.Get<int>("KeyWordType");
         return (grade is >= 1 and <= 3 ? (Grade)grade : Grade.None, keyword is >= 1 and <= 4 ? (Keyword)keyword : Keyword.None);
+    }
+
+    internal static ChipRole ChipRoleOf(int relicId)
+    {
+        if (ChipRoles.TryGetValue(relicId, out var role)) return role;
+        var config = RuntimeObject.StaticCall(GameUi.Require("UI", "UIHelper"), "GetRelicInfoConfigure", relicId);
+        if (config == null) return ChipRole.None;
+        var roles = ReadInts(config.Get("TagType")).Select(RoleWeights.FromTag).OfType<RoleKind>().ToHashSet();
+        var added = new RoleWeights(config.Get<int>("SupportPt"), config.Get<int>("TankPt"), config.Get<int>("AttackPt"), config.Get<int>("CardPt"));
+        return ChipRoles[relicId] = new ChipRole(roles, added);
+    }
+
+    internal static RoleWeights? HeroWeights(int heroId)
+    {
+        _heroWeights ??= CharacterWeights(GameUi.Require("", "StaticConfigure"));
+        if (_heroWeights.Count == 0) _heroWeights = null;
+        if (_heroWeights == null || !_heroWeights.TryGetValue(heroId, out var weight)) return null;
+        return new RoleWeights(weight.Get<int>("SupportPt"), weight.Get<int>("TankPt"), weight.Get<int>("AttackPt"), weight.Get<int>("CardPt"));
     }
 
     internal static string ChipName(int relicId)

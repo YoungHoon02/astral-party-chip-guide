@@ -137,14 +137,19 @@ internal static class Guide
         var panel = Plugin.KeywordPanel.Value
             ? KeywordLock.Keywords.Select(k => new KeywordRow(k, KeywordLock.State(owned, k), ownedKeywords.Count(o => o == k), GameTables.KeywordChips(k, situation.MapId))).ToList()
             : null;
+        var roles = screen.Cards.Select(card => GameTables.ChipRoleOf(card.RelicId)).ToList();
+        var showRoles = Plugin.ShowRoleWeights.Value;
+        var weights = showRoles && GameTables.HeroWeights(situation.HeroId) is { } baseWeights
+            ? situation.OwnedRelics.Aggregate(baseWeights, (sum, id) => sum.Add(GameTables.ChipRoleOf(id).Added))
+            : null;
         BadgeView.Show(screen.Container,
-            screen.Cards.Select((card, i) => (card.Item, advice[i], warnings[i], warn ? KeywordLock.WouldLock(owned, infos[i].Keyword) : NoKeywords)).ToList(),
-            panel);
+            screen.Cards.Select((card, i) => new CardView(card.Item, advice[i], warnings[i], warn ? KeywordLock.WouldLock(owned, infos[i].Keyword) : NoKeywords, roles[i])).ToList(),
+            panel, weights, showRoles);
         _signature = signature;
 
         if (Plugin.Diagnostics.Value)
             Plugin.Logger.LogInfo($"[진단] 캐릭터={situation.HeroId} 보유={string.Join(",", situation.OwnedRelics)} 아군={string.Join(",", situation.AllyHeroes)} 맵={situation.MapId} "
-                + $"보유 키워드={string.Join(",", owned)} "
+                + $"보유 키워드={string.Join(",", owned)} 가중치={weights?.ToString() ?? "없음"} "
                 + $"판정={string.Join(" / ", options.Select((o, i) => $"{o.RelicId}({o.Grade},{infos[i].Keyword})={advice[i]?.Verdict.ToString() ?? "없음"}{(warnings[i] != null ? "+키워드경고" : "")}"))}");
     }
 

@@ -22,26 +22,31 @@ internal static class KeywordPanel
     private static IntPtr _nameTipFor;
     private static IReadOnlyList<KeywordRow> _rows = Array.Empty<KeywordRow>();
     private static IReadOnlySet<Keyword> _preview = new HashSet<Keyword>();
+    private static RoleWeights? _weights;
+    private static RoleWeights _weightPreview = RoleWeights.Zero;
     private static int _textSize;
     private static IntPtr _iconClass;
 
     internal static bool Alive => GameUi.Alive(_panel);
 
-    internal static void Show(RuntimeObject container, IReadOnlyList<KeywordRow> rows, int textSize, IntPtr iconClass)
+    internal static void Show(RuntimeObject container, IReadOnlyList<KeywordRow>? rows, RoleWeights? weights, int textSize, IntPtr iconClass)
     {
         Clear();
+        if (rows == null && weights == null) return;
         _container = container;
         _iconClass = iconClass;
-        _rows = rows;
+        _rows = rows ?? Array.Empty<KeywordRow>();
+        _weights = weights;
         _textSize = textSize;
         _panel = Build();
     }
 
-    // 고르면 막히게 될 키워드를 미리 보여 준다. 마우스가 옮겨질 때만 다시 그린다.
-    internal static void Preview(IReadOnlySet<Keyword> keywords)
+    // 고르면 막히게 될 키워드와 바뀔 역할군 가중치를 미리 보여 준다. 대상이 바뀔 때만 다시 그린다.
+    internal static void Preview(IReadOnlySet<Keyword> keywords, RoleWeights weights)
     {
-        if (_container == null || keywords.SetEquals(_preview)) return;
+        if (_container == null || (keywords.SetEquals(_preview) && weights == _weightPreview)) return;
         _preview = keywords;
+        _weightPreview = weights;
         Dispose();
         _panel = Build();
     }
@@ -74,6 +79,8 @@ internal static class KeywordPanel
         {
             _container = null;
             _preview = new HashSet<Keyword>();
+            _weights = null;
+            _weightPreview = RoleWeights.Zero;
         }
     }
 
@@ -98,37 +105,44 @@ internal static class KeywordPanel
 
     private static RuntimeObject Build()
     {
-        var segments = new List<(string Text, Color Ink, IReadOnlyList<ChipIcon> Chips, bool Grayed)> { ("키워드 (2종까지)", OpenInk, Array.Empty<ChipIcon>(), false) };
-        segments.AddRange(_rows.Select(Line));
+        var rows = new List<List<(string Text, Color Ink, IReadOnlyList<ChipIcon> Chips, bool Grayed)>>();
+        if (_rows.Count > 0)
+            rows.Add(new[] { ("키워드 (2종까지)", OpenInk, (IReadOnlyList<ChipIcon>)Array.Empty<ChipIcon>(), false) }.Concat(_rows.Select(Line)).ToList());
+        if (_weights is { } weights)
+            rows.Add(WeightLine(weights));
 
         var panel = RuntimeObject.New(GameUi.Require("FairyGUI", "GComponent"));
         try
         {
             var padding = _textSize * 0.6f;
-            var labels = segments.Select(segment => Ui.Text(segment.Text, _textSize, segment.Ink, 0f, wrap: false)).ToList();
-            var lineHeight = labels.Max(label => label.Get<float>("height"));
+            var labels = rows.Select(row => row.Select(segment => Ui.Text(segment.Text, _textSize, segment.Ink, 0f, wrap: false)).ToList()).ToList();
+            var lineHeight = labels.SelectMany(row => row).Max(label => label.Get<float>("height"));
             var iconSize = lineHeight * 0.9f;
-            var height = lineHeight + padding * 2;
-
-            var x = padding * 1.5f;
-            for (var i = 0; i < labels.Count; i++)
+            var width = 0f;
+            for (var r = 0; r < rows.Count; r++)
             {
-                if (i > 0) x += padding * 2;
-                labels[i].Call("SetXY", x, padding);
-                panel.Call("AddChild", labels[i]);
-                x += labels[i].Get<float>("width");
-                foreach (var chip in segments[i].Chips)
+                var y = padding + lineHeight * r;
+                var x = padding * 1.5f;
+                for (var i = 0; i < labels[r].Count; i++)
                 {
-                    x += 2f;
-                    var icon = ChipIconLoader(chip.Icon, iconSize, segments[i].Grayed);
-                    icon.Call("SetXY", x, padding + (lineHeight - iconSize) / 2);
-                    panel.Call("AddChild", icon);
-                    Icons.Add((icon, chip.Name));
-                    x += iconSize;
+                    if (i > 0) x += padding * 2;
+                    labels[r][i].Call("SetXY", x, y);
+                    panel.Call("AddChild", labels[r][i]);
+                    x += labels[r][i].Get<float>("width");
+                    foreach (var chip in rows[r][i].Chips)
+                    {
+                        x += 2f;
+                        var icon = ChipIconLoader(chip.Icon, iconSize, rows[r][i].Grayed);
+                        icon.Call("SetXY", x, y + (lineHeight - iconSize) / 2);
+                        panel.Call("AddChild", icon);
+                        Icons.Add((icon, chip.Name));
+                        x += iconSize;
+                    }
                 }
+                width = Math.Max(width, x + padding * 1.5f);
             }
-            var width = x + padding * 1.5f;
-            var background = Ui.Graph(width, height, Background, height / 2);
+            var height = lineHeight * rows.Count + padding * 2;
+            var background = Ui.Graph(width, height, Background, Math.Min(height / 2, padding * 2));
             // 배경도 터치를 받아야 아이콘 사이로 마우스가 지나가도 패널 위로 인식된다.
             background.Set("touchable", true);
             panel.Call("AddChildAt", background, 0);
@@ -146,6 +160,22 @@ internal static class KeywordPanel
             Icons.Clear();
             throw;
         }
+    }
+
+    // 가장 높은 역할군을 강조하고, 미리보기 중이면 고른 뒤 값을 함께 보여 준다.
+    private static List<(string Text, Color Ink, IReadOnlyList<ChipIcon> Chips, bool Grayed)> WeightLine(RoleWeights weights)
+    {
+        var top = RoleWeights.Kinds.Max(kind => weights[kind]);
+        var line = new List<(string, Color, IReadOnlyList<ChipIcon>, bool)> { ("역할군 가중치", OpenInk, Array.Empty<ChipIcon>(), false) };
+        foreach (var kind in RoleWeights.Kinds)
+        {
+            var name = RoleWeights.Name(kind);
+            var added = _weightPreview[kind];
+            line.Add(added > 0
+                ? ($"{name} {weights[kind]}→{weights[kind] + added}", PreviewInk, Array.Empty<ChipIcon>(), false)
+                : ($"{name} {weights[kind]}", weights[kind] == top ? OwnedInk : OpenInk, Array.Empty<ChipIcon>(), false));
+        }
+        return line;
     }
 
     // "칩 획득 확률" 글자 오른쪽에 세로 가운데를 맞춰 붙인다. 못 찾으면 창 맨 위 가운데에 둔다.
