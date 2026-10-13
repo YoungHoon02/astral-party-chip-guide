@@ -9,11 +9,9 @@ internal sealed record KeywordRow(Keyword Keyword, KeywordState State, int Count
 
 internal static class KeywordPanel
 {
-    private const int FillScale = 1;
-
     private static readonly Color OwnedInk = new(1f, 0.81f, 0.2f, 1f), OpenInk = Color.white,
-        LockedInk = new(0.5f, 0.5f, 0.5f, 1f), PreviewInk = new(0.93f, 0.55f, 0.13f, 1f),
-        Background = new(0.04f, 0.05f, 0.07f, 0.85f);
+        LockedInk = new(0.5f, 0.5f, 0.5f, 1f), PreviewInk = new(0.93f, 0.55f, 0.13f, 1f), GainInk = new(0.45f, 0.9f, 0.45f, 1f),
+        Background = new(0.04f, 0.05f, 0.07f, 0.55f);
 
     private static readonly List<(RuntimeObject Icon, string Name)> Icons = new();
     private static RuntimeObject? _panel;
@@ -22,6 +20,7 @@ internal static class KeywordPanel
     private static IntPtr _nameTipFor;
     private static IReadOnlyList<KeywordRow> _rows = Array.Empty<KeywordRow>();
     private static IReadOnlySet<Keyword> _preview = new HashSet<Keyword>();
+    private static Keyword _gain;
     private static RoleWeights? _weights;
     private static RoleWeights _weightPreview = RoleWeights.Zero;
     private static int _textSize;
@@ -41,17 +40,16 @@ internal static class KeywordPanel
         _panel = Build();
     }
 
-    // 고르면 막히게 될 키워드와 바뀔 역할군 가중치를 미리 보여 준다. 대상이 바뀔 때만 다시 그린다.
-    internal static void Preview(IReadOnlySet<Keyword> keywords, RoleWeights weights)
+    // 고르면 얻을 키워드, 막히게 될 키워드, 바뀔 역할군 가중치를 미리 보여 준다. 대상이 바뀔 때만 다시 그린다.
+    internal static void Preview(Keyword gain, IReadOnlySet<Keyword> keywords, RoleWeights weights)
     {
-        if (_container == null || (keywords.SetEquals(_preview) && weights == _weightPreview)) return;
+        if (_container == null || (gain == _gain && keywords.SetEquals(_preview) && weights == _weightPreview)) return;
+        _gain = gain;
         _preview = keywords;
         _weightPreview = weights;
         Dispose();
         _panel = Build();
     }
-
-    internal static bool UnderPointer(RuntimeObject root) => Alive && GameUi.IsUnderPointer(root, _panel!);
 
     internal static void UpdateHover(RuntimeObject root)
     {
@@ -79,6 +77,7 @@ internal static class KeywordPanel
         {
             _container = null;
             _preview = new HashSet<Keyword>();
+            _gain = Keyword.None;
             _weights = null;
             _weightPreview = RoleWeights.Zero;
         }
@@ -132,7 +131,7 @@ internal static class KeywordPanel
                     foreach (var chip in rows[r][i].Chips)
                     {
                         x += 2f;
-                        var icon = ChipIconLoader(chip.Icon, iconSize, rows[r][i].Grayed);
+                        var icon = Ui.ChipIcon(_iconClass, chip.Icon, iconSize, rows[r][i].Grayed);
                         icon.Call("SetXY", x, y + (lineHeight - iconSize) / 2);
                         panel.Call("AddChild", icon);
                         Icons.Add((icon, chip.Name));
@@ -143,8 +142,6 @@ internal static class KeywordPanel
             }
             var height = lineHeight * rows.Count + padding * 2;
             var background = Ui.Graph(width, height, Background, Math.Min(height / 2, padding * 2));
-            // 배경도 터치를 받아야 아이콘 사이로 마우스가 지나가도 패널 위로 인식된다.
-            background.Set("touchable", true);
             panel.Call("AddChildAt", background, 0);
             panel.Call("SetSize", width, height);
 
@@ -178,32 +175,44 @@ internal static class KeywordPanel
         return line;
     }
 
-    // "칩 획득 확률" 글자 오른쪽에 세로 가운데를 맞춰 붙인다. 못 찾으면 창 맨 위 가운데에 둔다.
+    // 창 제목 띠 안에 두면 제목과 역할군 태그를 가려서, 띠 바로 위 가운데에 둔다. 창이 화면 맨 위보다 아래서 시작할 수 있어 화면 위쪽 끝까지는 창 밖으로 올릴 수 있다.
     private static (float X, float Y) Anchor(RuntimeObject container, float width, float height, float padding)
     {
+        var x = Math.Max(padding, (container.Get<float>("width") - width) / 2);
+        var screenTop = container.Call("GlobalToLocal", Vector2.zero)!.Value<Vector2>().y;
         try
         {
-            var probability = container.Field("txt_Probability");
-            if (probability != null && probability.Get<bool>("visible"))
-                return (probability.Get<float>("x") + probability.Get<float>("width") + padding * 2,
-                    probability.Get<float>("y") + (probability.Get<float>("height") - height) / 2);
+            if (BandTop(container) is { } top) return (x, Math.Max(screenTop, top - height - padding / 2));
         }
         catch (Exception ex)
         {
-            Plugin.Logger.LogWarning($"칩 획득 확률 위치를 읽지 못해 창 맨 위에 둡니다: {ex.Message}");
+            Plugin.Logger.LogWarning($"창 제목 띠 위치를 읽지 못해 창 맨 위에 둡니다: {ex.Message}");
         }
-        return (Math.Max(padding, (container.Get<float>("width") - width) / 2), padding);
+        return (x, Math.Max(screenTop, padding));
     }
 
-    // 게임 아이콘은 게임 전용 로더로만 불러와지므로 칩 카드의 아이콘 로더와 같은 클래스로 만든다.
-    private static RuntimeObject ChipIconLoader(string url, float size, bool grayed)
+    // 제목 띠 배경은 이름 없는 자식이라, 칩 획득 확률 글자를 세로로 감싸면서 창 폭 대부분을 덮는 자식을 띠로 본다. 없으면 확률 글자 위쪽을 쓴다.
+    private static float? BandTop(RuntimeObject container)
     {
-        var icon = RuntimeObject.New(_iconClass != IntPtr.Zero ? _iconClass : GameUi.Require("FairyGUI", "GLoader"));
-        icon.Call("SetSize", size, size);
-        icon.Set("fill", FillScale);
-        icon.Set("url", url);
-        icon.Set("grayed", grayed);
-        return icon;
+        var probability = container.Field("txt_Probability");
+        if (probability == null || !probability.Get<bool>("visible")) return null;
+        var textTop = probability.Get<float>("y");
+        var textBottom = textTop + probability.Get<float>("height");
+        var minWidth = container.Get<float>("width") * 0.8f;
+        // 창 전체를 덮는 어두운 배경도 같은 조건에 걸리므로 높이로 거른다.
+        var maxHeight = container.Get<float>("height") * 0.5f;
+        float? band = null;
+        var count = container.Get<int>("numChildren");
+        for (var i = 0; i < count; i++)
+        {
+            var child = container.Call("GetChildAt", i);
+            if (child == null || child.Pointer == probability.Pointer || !child.Get<bool>("visible")) continue;
+            if (child.Get<float>("width") < minWidth || child.Get<float>("height") > maxHeight) continue;
+            var y = child.Get<float>("y");
+            if (y <= textTop && y + child.Get<float>("height") >= textBottom) band = Math.Max(band ?? y, y);
+        }
+        if (Plugin.Diagnostics.Value) Plugin.Logger.LogInfo($"[진단] 제목 띠 위쪽={band?.ToString() ?? "못 찾음"} 확률 글자 위쪽={textTop}");
+        return band ?? Ui.TextTop(probability);
     }
 
     // 색만으로 구분하지 않도록 기호와 문구도 함께 바꾼다. 막혔거나 막힐 키워드에만 칩 아이콘을 붙인다.
@@ -213,9 +222,9 @@ internal static class KeywordPanel
         if (_preview.Contains(row.Keyword)) return ($"※ {name}  고르면 막힘", PreviewInk, row.Chips, false);
         return row.State switch
         {
-            KeywordState.Owned => ($"● {name}  {row.Count}개", OwnedInk, Array.Empty<ChipIcon>(), false),
+            KeywordState.Owned => ($"● {name}  {row.Count}개", row.Keyword == _gain ? GainInk : OwnedInk, Array.Empty<ChipIcon>(), false),
             KeywordState.Locked => ($"× {name}  막힘", LockedInk, row.Chips, true),
-            _ => ($"○ {name}", OpenInk, Array.Empty<ChipIcon>(), false),
+            _ => ($"○ {name}", row.Keyword == _gain ? GainInk : OpenInk, Array.Empty<ChipIcon>(), false),
         };
     }
 }

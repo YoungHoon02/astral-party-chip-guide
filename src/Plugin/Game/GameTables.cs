@@ -54,6 +54,18 @@ internal static class GameTables
         return ChipNames[relicId] = name;
     }
 
+    // 다른 맵 전용 칩은 이 판에 나오지 않으므로 빼고, 아이콘이 없으면 패널에 그릴 수 없어 뺀다.
+    internal static ChipIcon? ChipIconOf(int relicId, int mapId)
+    {
+        var config = RuntimeObject.StaticCall(GameUi.Require("UI", "UIHelper"), "GetRelicInfoConfigure", relicId);
+        if (config == null) return null;
+        var maps = Ints(config, "MapLimit", "chip");
+        if (maps.Count > 0 && !maps.Contains(mapId)) return null;
+        var icon = config.Get("Icon")?.String() ?? "";
+        var name = ChipName(relicId);
+        return icon.Length == 0 || name.Length == 0 ? null : new ChipIcon(name, icon);
+    }
+
     // 등급만 다른 칩은 하나로 합친다. 설정 테이블은 실행 중 바뀌지 않아 한 번만 읽는다.
     internal static IReadOnlyList<ChipIcon> KeywordChips(Keyword keyword, int mapId)
     {

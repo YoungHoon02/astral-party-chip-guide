@@ -44,7 +44,8 @@ try {
     $archive = New-Object IO.Compression.ZipArchive($output, [IO.Compression.ZipArchiveMode]::Create, $true)
     try {
         foreach ($file in $files) {
-            $entry = $archive.CreateEntry("AstralPartyChipGuide/$($file.Name)", [IO.Compression.CompressionLevel]::Optimal)
+            # BepInEx 폴더에 그대로 풀면 plugins 아래 자리를 잡도록 plugins부터 경로를 넣는다.
+            $entry = $archive.CreateEntry("plugins/AstralPartyChipGuide/$($file.Name)", [IO.Compression.CompressionLevel]::Optimal)
             $source = [IO.File]::OpenRead($file.Source)
             $target = $entry.Open()
             try { $source.CopyTo($target) }

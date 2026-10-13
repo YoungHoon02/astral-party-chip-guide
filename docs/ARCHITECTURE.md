@@ -9,10 +9,12 @@ EventSystem.Update Postfix (프레임당 1회)
  │    (선택지가 바뀔 때만 다음 단계 실행: 리롤, 창 다시 열기)
  └ GameStateReader     내 캐릭터 ID, 보유 칩 ID들, 아군 캐릭터 ID들, 맵 ID
  └ ChipAdvisor         (순수 C#) 상황 + 선택지 + 규칙 → 칩별 판정과 이유
- └ BadgeView           칩 카드에 배지, 호버 시 이유 툴팁
+ └ BadgeView           칩 카드에 배지, 선택한 칩의 이유 툴팁
+ └ KeywordPanel        제목 띠 위 키워드·역할군 가중치 패널
+ └ CoreStrip           확인 버튼 아래 코어 칩 아이콘 줄
 
 RuleBook      rules.json 로드·검증, 파일이 바뀌면 다시 읽음
-TemplateTool  설정 키를 누르면 게임의 칩·캐릭터·맵 테이블을 names.json으로 출력
+TemplateTool  게임 데이터가 준비되면 칩·캐릭터·맵 테이블을 names.json으로 자동 출력
 ```
 
 ## 구성 요소
@@ -27,7 +29,8 @@ TemplateTool  설정 키를 누르면 게임의 칩·캐릭터·맵 테이블을
 | KeywordLock | 키워드 고정 경고 문구. 규칙 파일과 별개로 칩의 `KeyWordType`만으로 판단 | `src/Core/KeywordLock.cs` |
 | RuleBook / RuleSource | 규칙 해석·검증, 실패 시 이전 규칙 유지 | `src/Core/RuleBook.cs`, `RuleSource.cs` |
 | NameTable | 이름 ↔ ID 변환 | `src/Core/NameTable.cs` |
-| BadgeView | 배지·툴팁 표시와 제거, 호버 판정 | `src/Plugin/View/BadgeView.cs` |
+| BadgeView | 배지·툴팁 표시와 제거, 선택한 칩 판정 | `src/Plugin/View/BadgeView.cs` |
+| KeywordPanel / CoreStrip | 키워드·가중치 패널, 코어 칩 아이콘 줄 | `src/Plugin/View/KeywordPanel.cs`, `CoreStrip.cs` |
 | ReleaseCheck / Updater | 게임 시작 때 게임 밖 새 버전 확인 프로그램 실행 (아래 "릴리스 알림") | `src/Plugin/ReleaseCheck.cs`, `src/Updater/` |
 | Guide | 위 요소를 묶는 틱 루프. 칩 창 탐색 0.2초, 규칙 파일 변경 확인 2초 간격 | `src/Plugin/Guide.cs` |
 
@@ -36,7 +39,7 @@ TemplateTool  설정 키를 누르면 게임의 칩·캐릭터·맵 테이블을
 ## 지켜야 할 제약
 
 - **게임 로직에 Harmony를 걸지 않습니다.** 매 프레임 실행은 `EventSystem.Update` Postfix 하나만 씁니다. 게임 로직을 패치하면 게임 업데이트나 다른 모드와 충돌할 위험이 커집니다.
-- **IL2CPP 쪽에 새 타입을 등록하거나 이벤트를 구독하지 않습니다.** 이런 등록은 실제 게임에서 불안정했기 때문에, 호버도 매 프레임 마우스 아래 객체를 조회해서 판단합니다.
+- **IL2CPP 쪽에 새 타입을 등록하거나 이벤트를 구독하지 않습니다.** 이런 등록은 실제 게임에서 불안정했기 때문에, 선택한 칩도 매 프레임 카드의 선택 상태를 읽어서 판단합니다.
 - **읽기 전용입니다.** 칩 선택 동작을 호출하지 않고 게임 원래 UI 값을 바꾸지 않습니다. 모드가 만든 객체만 붙였다가 뗍니다.
 - IL2CPP는 해제된 객체의 주소를 재사용하므로 칩 카드는 포인터와 칩 ID 조합으로 식별하고, 참조는 쓸 때마다 유효성을 확인합니다.
 - 게임 프로세스는 외부 통신을 하지 않고 계정 정보를 읽거나 저장하지 않습니다. 새 버전 확인은 게임 밖 확인 프로그램이 작은 인덱스 하나만 읽으며, 파일을 내려받거나 바꾸지 않습니다(아래 "릴리스 알림").

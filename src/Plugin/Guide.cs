@@ -19,6 +19,7 @@ internal static class Guide
     private static readonly IReadOnlySet<Keyword> NoKeywords = new HashSet<Keyword>();
     private static string _signature = "";
     private static bool _pve;
+    private static bool _hidden;
 
     internal static void Init()
     {
@@ -40,12 +41,6 @@ internal static class Guide
     // 게임 업데이트·언어 변경을 따라가도록 세션마다 게임 데이터가 준비되면 한 번 자동으로 맞춘다.
     private static void TickTemplate()
     {
-        if (Input.GetKeyDown(Plugin.TemplateKey.Value))
-        {
-            if (ExportNames() is { } chips) Plugin.Logger.LogInfo($"names.json을 만들었습니다: 칩 {chips}개");
-            else Plugin.Logger.LogInfo("게임 데이터가 아직 준비되지 않았습니다. 로비에서 다시 눌러 주세요.");
-            return;
-        }
         var now = Time.unscaledTime;
         if (_namesSynced || now < _nextNamesTry) return;
         _nextNamesTry = now + NamesRetryInterval;
@@ -80,8 +75,13 @@ internal static class Guide
             if (_files.Changed()) _rules.Reload();
         }
 
+        if (Input.GetKeyDown(Plugin.ToggleKey.Value))
+        {
+            _hidden = !_hidden;
+            Plugin.Logger.LogInfo(_hidden ? "칩 가이드 표시를 숨겼습니다." : "칩 가이드 표시를 다시 켰습니다.");
+        }
         var root = GameUi.Root();
-        if (!Plugin.Enabled.Value || root == null)
+        if (!Plugin.Enabled.Value || _hidden || root == null)
         {
             _pve = false;
             Hide();
@@ -102,7 +102,7 @@ internal static class Guide
         if (BadgeView.Showing)
         {
             if (!BadgeView.StillAttached()) Hide();
-            else BadgeView.UpdateHover(root);
+            else BadgeView.Update(root);
         }
         if (scan) Scan(root);
     }
@@ -137,20 +137,36 @@ internal static class Guide
         var panel = Plugin.KeywordPanel.Value
             ? KeywordLock.Keywords.Select(k => new KeywordRow(k, KeywordLock.State(owned, k), ownedKeywords.Count(o => o == k), GameTables.KeywordChips(k, situation.MapId))).ToList()
             : null;
+        var coreChips = Plugin.CoreStrip.Value ? CoreChips(situation) : null;
         var roles = screen.Cards.Select(card => GameTables.ChipRoleOf(card.RelicId)).ToList();
         var showRoles = Plugin.ShowRoleWeights.Value;
         var weights = showRoles && GameTables.HeroWeights(situation.HeroId) is { } baseWeights
             ? situation.OwnedRelics.Aggregate(baseWeights, (sum, id) => sum.Add(GameTables.ChipRoleOf(id).Added))
             : null;
         BadgeView.Show(screen.Container,
-            screen.Cards.Select((card, i) => new CardView(card.Item, advice[i], warnings[i], warn ? KeywordLock.WouldLock(owned, infos[i].Keyword) : NoKeywords, roles[i])).ToList(),
-            panel, weights, showRoles);
+            screen.Cards.Select((card, i) => new CardView(card.Item, GameTables.ChipName(card.RelicId), advice[i], warnings[i], warn ? KeywordLock.WouldLock(owned, infos[i].Keyword) : NoKeywords, roles[i],
+                infos[i].Keyword, KeywordLock.State(owned, infos[i].Keyword))).ToList(),
+            panel, coreChips, weights, showRoles);
         _signature = signature;
 
         if (Plugin.Diagnostics.Value)
             Plugin.Logger.LogInfo($"[진단] 캐릭터={situation.HeroId} 보유={string.Join(",", situation.OwnedRelics)} 아군={string.Join(",", situation.AllyHeroes)} 아군 칩={string.Join(",", situation.AllyRelics)} 맵={situation.MapId} "
                 + $"보유 키워드={string.Join(",", owned)} 가중치={weights?.ToString() ?? "없음"} "
                 + $"판정={string.Join(" / ", options.Select((o, i) => $"{o.RelicId}({o.Grade},{infos[i].Keyword})={advice[i]?.Verdict.ToString() ?? "없음"}{(warnings[i] != null ? "+키워드경고" : "")}"))}");
+    }
+
+    // 등급만 다른 칩은 이름으로 합쳐, 어느 등급이든 하나 가졌으면 보유로 본다.
+    private static IReadOnlyList<CoreChip> CoreChips(Situation situation)
+    {
+        var ownedNames = situation.OwnedRelics.Select(GameTables.ChipName).ToHashSet();
+        var result = new List<CoreChip>();
+        var seen = new HashSet<string>();
+        foreach (var id in ChipAdvisor.CoreChips(_rules.Current, situation))
+        {
+            if (GameTables.ChipIconOf(id, situation.MapId) is not { } chip || !seen.Add(chip.Name)) continue;
+            result.Add(new CoreChip(chip, ownedNames.Contains(chip.Name)));
+        }
+        return result;
     }
 
     private static void Hide()
