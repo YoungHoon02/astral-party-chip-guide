@@ -9,7 +9,7 @@ public class KeywordLockTests
     {
         var warning = KeywordLock.Warning(Owned(Keyword.Cure, Keyword.Cure), Keyword.Mark);
 
-        Assert.Equal("고르면 키워드가 회복·표식으로 고정되어 별빛·에너지 칩이 더 나오지 않음", warning);
+        Assert.Equal("고르면 키워드가 회복·표식으로 고정되어 스타라이트·에너지 칩이 더 나오지 않음", warning);
     }
 
     [Fact]
@@ -17,7 +17,7 @@ public class KeywordLockTests
     {
         var warning = KeywordLock.Warning(Owned(Keyword.Salary), Keyword.Energy);
 
-        Assert.StartsWith("고르면 키워드가 별빛·에너지로 고정되어 회복·표식 칩이", warning);
+        Assert.StartsWith("고르면 키워드가 스타라이트·에너지로 고정되어 회복·표식 칩이", warning);
     }
 
     [Theory]
@@ -48,7 +48,7 @@ public class KeywordLockTests
     {
         var warning = KeywordLock.Warning(Owned(Keyword.Cure), Keyword.Mark, new[] { ("비타민 알약", Keyword.Cure), ("ATM기", Keyword.Mark) });
 
-        Assert.Equal("고르면 키워드가 회복·표식으로 고정되어 별빛·에너지 칩이 더 나오지 않음", warning);
+        Assert.Equal("고르면 키워드가 회복·표식으로 고정되어 스타라이트·에너지 칩이 더 나오지 않음", warning);
     }
 
     [Fact]

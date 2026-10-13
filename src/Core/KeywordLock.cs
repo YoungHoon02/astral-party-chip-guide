@@ -17,7 +17,7 @@ public static class KeywordLock
     public static string Name(Keyword keyword) => keyword switch
     {
         Keyword.Cure => "회복",
-        Keyword.Salary => "별빛",
+        Keyword.Salary => "스타라이트",
         Keyword.Mark => "표식",
         Keyword.Energy => "에너지",
         _ => "",
