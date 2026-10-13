@@ -3,6 +3,8 @@ namespace ChipGuide.Core;
 public static class ChipAdvisor
 {
     public const int MaxNotes = 3;
+    public const string CautionPrefix = "주의:";
+    private const int CharacterSpecificity = 2;
 
     public static IReadOnlyList<Advice?> Advise(RuleSet rules, Situation situation, IReadOnlyList<ChipOption> options)
     {
@@ -37,7 +39,11 @@ public static class ChipAdvisor
         if (hits.Count == 0) return null;
 
         var top = hits[0];
-        var notes = hits.Skip(1)
+        // 조건부 규칙의 무난은 덧붙는 정보라서, 주의가 아니면 더 낮은 단계에서 정해진 코어를 내리지 않는다.
+        if (top.Verdict == Verdict.Good && top.Specificity > CharacterSpecificity && !top.Why.StartsWith(CautionPrefix, StringComparison.Ordinal)
+            && hits.FindIndex(hit => hit.Verdict == Verdict.Core) is var coreIndex and >= 0)
+            top = hits[coreIndex];
+        var notes = hits.Where(hit => hit != top)
             .Select(hit => new Note(hit.Verdict, hit.Why))
             .Where(note => note.Why != top.Why)
             .Distinct()

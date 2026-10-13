@@ -7,8 +7,8 @@ public class ChipAdvisorTests
 
     private static HashSet<int> Ids(params int[] ids) => new(ids);
 
-    private static Situation At(int hero, int[]? owned = null, int[]? allies = null, int map = 0) =>
-        new(hero, Ids(owned ?? Array.Empty<int>()), Ids(allies ?? Array.Empty<int>()), map);
+    private static Situation At(int hero, int[]? owned = null, int[]? allies = null, int map = 0, int[]? allyOwned = null) =>
+        new(hero, Ids(owned ?? Array.Empty<int>()), Ids(allies ?? Array.Empty<int>()), map, Ids(allyOwned ?? Array.Empty<int>()));
 
     private static ChipRule ForCharacter(int hero, int[] chips, Verdict verdict, string why, Grade? min = null) =>
         new(Ids(chips), verdict, why, 2, new Condition(Character: Ids(hero)), min);
@@ -92,6 +92,48 @@ public class ChipAdvisorTests
 
         Assert.Equal(Verdict.Core, advice[0]!.Verdict);
         Assert.Equal("아드와 세트", advice[0]!.Reason);
+    }
+
+    [Fact]
+    public void 조건부_무난은_낮은_단계의_코어를_내리지_않는다()
+    {
+        var rules = Rules(
+            ForCharacter(Mimi, new[] { Glove }, Verdict.Core, "미미 코어"),
+            new ChipRule(Ids(Glove), Verdict.Good, "맵 무난", 3, new Condition(Map: Ids(7))));
+
+        var advice = ChipAdvisor.Advise(rules, At(Mimi, map: 7), new[] { new ChipOption(Glove, Grade.Blue) });
+
+        Assert.Equal(Verdict.Core, advice[0]!.Verdict);
+        Assert.Equal("미미 코어", advice[0]!.Reason);
+        Assert.Equal(new[] { new Note(Verdict.Good, "맵 무난") }, advice[0]!.Notes);
+    }
+
+    [Fact]
+    public void 조건부_주의_무난은_낮은_단계의_코어를_이긴다()
+    {
+        var rules = Rules(
+            ForCharacter(Mimi, new[] { Glove }, Verdict.Core, "미미 코어"),
+            new ChipRule(Ids(Glove), Verdict.Good, "주의: 일부 턴에만 효과", 3, new Condition(Map: Ids(7))));
+
+        var advice = ChipAdvisor.Advise(rules, At(Mimi, map: 7), new[] { new ChipOption(Glove, Grade.Blue) });
+
+        Assert.Equal(Verdict.Good, advice[0]!.Verdict);
+        Assert.Equal("주의: 일부 턴에만 효과", advice[0]!.Reason);
+    }
+
+    [Fact]
+    public void 캐릭터_항목의_무난은_역할_코어를_이긴다()
+    {
+        var roles = new Dictionary<int, Role> { [Megas] = Role.Flex };
+        var rules = new RuleSet(new[]
+        {
+            new ChipRule(Ids(Glove), Verdict.Core, "딜러 공용 코어", 1, new Condition(Roles: new HashSet<Role> { Role.Dealer, Role.Flex })),
+            ForCharacter(Megas, new[] { Glove }, Verdict.Good, "공격력 칩은 핵심이 아님"),
+        }, roles);
+
+        var advice = ChipAdvisor.Advise(rules, At(Megas), new[] { new ChipOption(Glove, Grade.Blue) });
+
+        Assert.Equal(Verdict.Good, advice[0]!.Verdict);
     }
 
     [Fact]

@@ -5,14 +5,16 @@ public sealed record Condition(
     IReadOnlySet<int>? Ally = null,
     IReadOnlySet<int>? Map = null,
     IReadOnlySet<int>? Character = null,
-    IReadOnlySet<Role>? Roles = null)
+    IReadOnlySet<Role>? Roles = null,
+    IReadOnlySet<int>? AllyOwned = null)
 {
     public bool Matches(Situation situation, Role? role) =>
         (Owned is null || Owned.Overlaps(situation.OwnedRelics))
         && (Ally is null || Ally.Overlaps(situation.AllyHeroes))
         && (Map is null || Map.Contains(situation.MapId))
         && (Character is null || Character.Contains(situation.HeroId))
-        && (Roles is null || role is { } known && Roles.Contains(known));
+        && (Roles is null || role is { } known && Roles.Contains(known))
+        && (AllyOwned is null || AllyOwned.Overlaps(situation.AllyRelics));
 }
 
 public sealed record ChipRule(

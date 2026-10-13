@@ -4,8 +4,9 @@ public class RuleBookTests
 {
     private static readonly NameTable Names = NameTable.Parse(NameTableTests.Sample);
 
-    private static Situation At(int hero, int[]? owned = null, int[]? allies = null, int map = 0) =>
-        new(hero, new HashSet<int>(owned ?? Array.Empty<int>()), new HashSet<int>(allies ?? Array.Empty<int>()), map);
+    private static Situation At(int hero, int[]? owned = null, int[]? allies = null, int map = 0, int[]? allyOwned = null) =>
+        new(hero, new HashSet<int>(owned ?? Array.Empty<int>()), new HashSet<int>(allies ?? Array.Empty<int>()), map,
+            new HashSet<int>(allyOwned ?? Array.Empty<int>()));
 
     private static Advice? Judge(string json, Situation situation, int relic, Grade grade)
     {
@@ -41,6 +42,51 @@ public class RuleBookTests
 
         var cutter = Judge(json, At(1), 300, Grade.Purple)!;
         Assert.Equal((Verdict.Good, "딜러 공용 무난"), (cutter.Verdict, cutter.Reason));
+    }
+
+    [Fact]
+    public void 아군_보유_칩_조건을_읽는다()
+    {
+        const string json = """
+        {
+          "version": 1,
+          "rules": [ { "when": { "allyOwned": ["커터칼"] }, "chip": "아드레날린", "verdict": "avoid", "why": "아군 커터칼" } ]
+        }
+        """;
+
+        Assert.Empty(RuleBook.Load(json, Names).Errors);
+        Assert.Equal(Verdict.Avoid, Judge(json, At(3, allyOwned: new[] { 300 }), 100, Grade.Purple)!.Verdict);
+        Assert.Null(Judge(json, At(3, owned: new[] { 300 }), 100, Grade.Purple));
+    }
+
+    [Fact]
+    public void 역할_조건은_캐릭터의_역할과_정확히_비교한다()
+    {
+        const string json = """
+        {
+          "version": 1,
+          "characters": { "미미": { "role": "support" }, "파파라": { "role": "flex" } },
+          "rules": [ { "when": { "role": ["support"] }, "chip": "커터칼", "verdict": "good", "why": "서포터만" } ]
+        }
+        """;
+
+        Assert.Empty(RuleBook.Load(json, Names).Errors);
+        Assert.Equal(Verdict.Good, Judge(json, At(3), 300, Grade.Purple)!.Verdict);
+        Assert.Null(Judge(json, At(1), 300, Grade.Purple));
+        Assert.Null(Judge(json, At(4), 300, Grade.Purple));
+    }
+
+    [Fact]
+    public void 잘못된_역할_조건은_규칙을_뺀다()
+    {
+        const string json = """
+        { "version": 1, "rules": [ { "when": { "role": ["tank"] }, "chip": "커터칼", "verdict": "good", "why": "x" } ] }
+        """;
+
+        var load = RuleBook.Load(json, Names);
+
+        Assert.Empty(load.Rules.Rules);
+        Assert.Contains(load.Errors, e => e.StartsWith("rules[0].when.role"));
     }
 
     [Fact]

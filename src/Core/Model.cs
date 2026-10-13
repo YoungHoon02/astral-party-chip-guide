@@ -9,7 +9,7 @@ public enum Role { Dealer, Support, Flex }
 
 public sealed record ChipOption(int RelicId, Grade Grade);
 
-public sealed record Situation(int HeroId, IReadOnlySet<int> OwnedRelics, IReadOnlySet<int> AllyHeroes, int MapId);
+public sealed record Situation(int HeroId, IReadOnlySet<int> OwnedRelics, IReadOnlySet<int> AllyHeroes, int MapId, IReadOnlySet<int> AllyRelics);
 
 public sealed record Note(Verdict Verdict, string Why);
 

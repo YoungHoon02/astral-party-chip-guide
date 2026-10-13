@@ -180,7 +180,8 @@ public static class RuleBook
                 Errors.Add($"{path}.when: 조건 객체가 필요합니다");
                 return null;
             }
-            IReadOnlySet<int>? owned = null, ally = null, map = null, character = null;
+            IReadOnlySet<int>? owned = null, ally = null, map = null, character = null, allyOwned = null;
+            IReadOnlySet<Role>? roles = null;
             var kinds = 0;
             var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var property in whenElement.EnumerateObject())
@@ -191,31 +192,59 @@ public static class RuleBook
                     Errors.Add($"{conditionPath}: 중복된 조건입니다");
                     return null;
                 }
-                Func<string, IReadOnlySet<int>?> resolve;
-                if (property.Name == "owned") resolve = _names.Chip;
-                else if (property.Name is "ally" or "character") resolve = _names.Hero;
-                else if (property.Name == "map") resolve = _names.Map;
-                else
+                kinds++;
+                if (property.Name == "role")
                 {
-                    Errors.Add($"{conditionPath}: owned, ally, map, character 중 하나여야 합니다");
+                    if (ReadRoles(property.Value, conditionPath) is not { } parsed) return null;
+                    roles = parsed;
+                    continue;
+                }
+                Func<string, IReadOnlySet<int>?>? resolve = property.Name switch
+                {
+                    "owned" or "allyOwned" => _names.Chip,
+                    "ally" or "character" => _names.Hero,
+                    "map" => _names.Map,
+                    _ => null,
+                };
+                if (resolve is null)
+                {
+                    Errors.Add($"{conditionPath}: owned, allyOwned, ally, map, character, role 중 하나여야 합니다");
                     return null;
                 }
                 if (ReadNames(property.Value, conditionPath, resolve) is not { } ids) return null;
                 switch (property.Name)
                 {
                     case "owned": owned = ids; break;
+                    case "allyOwned": allyOwned = ids; break;
                     case "ally": ally = ids; break;
                     case "character": character = ids; break;
                     default: map = ids; break;
                 }
-                kinds++;
             }
             if (kinds == 0)
             {
                 Errors.Add($"{path}.when: 조건이 비어 있습니다");
                 return null;
             }
-            return (new Condition(owned, ally, map, character), kinds);
+            return (new Condition(owned, ally, map, character, roles, allyOwned), kinds);
+        }
+
+        private IReadOnlySet<Role>? ReadRoles(JsonElement list, string path)
+        {
+            var result = new HashSet<Role>();
+            if (list.ValueKind == JsonValueKind.Array)
+                foreach (var item in list.EnumerateArray())
+                {
+                    if (ParseRole(item) is not { } role)
+                    {
+                        result.Clear();
+                        break;
+                    }
+                    result.Add(role);
+                }
+            if (result.Count > 0) return result;
+            Errors.Add($"{path}: dealer, support, flex 중 하나 이상이 든 배열이어야 합니다");
+            return null;
         }
 
         private IReadOnlySet<int>? ReadNames(JsonElement list, string path, Func<string, IReadOnlySet<int>?> resolve)

@@ -29,13 +29,15 @@ internal static class GameState
         // 계정 ID는 나와 아군을 구분하는 데만 쓰고 어디에도 남기지 않는다.
         var selfId = selfPlayer.Get<long>("Id");
         var allies = new HashSet<int>();
+        var allyRelics = new HashSet<int>();
         foreach (var data in Players(battle))
         {
             var player = data.Field("player");
-            if (player == null || data.Get<int>("characterType") == MonsterType) continue;
-            if (player.Get<long>("Id") != selfId && HeroId(player) is { } hero) allies.Add(hero);
+            if (player == null || data.Get<int>("characterType") == MonsterType || player.Get<long>("Id") == selfId) continue;
+            if (HeroId(player) is { } hero) allies.Add(hero);
+            allyRelics.UnionWith(Ints(data.Call("GetRelicIds")));
         }
-        return new Situation(selfHero.Value, Ints(self.Call("GetRelicIds")), allies, room.Get<int>("MapId"));
+        return new Situation(selfHero.Value, Ints(self.Call("GetRelicIds")), allies, room.Get<int>("MapId"), allyRelics);
     }
 
     internal static string DescribePlayers()

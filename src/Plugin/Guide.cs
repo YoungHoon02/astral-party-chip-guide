@@ -148,7 +148,7 @@ internal static class Guide
         _signature = signature;
 
         if (Plugin.Diagnostics.Value)
-            Plugin.Logger.LogInfo($"[진단] 캐릭터={situation.HeroId} 보유={string.Join(",", situation.OwnedRelics)} 아군={string.Join(",", situation.AllyHeroes)} 맵={situation.MapId} "
+            Plugin.Logger.LogInfo($"[진단] 캐릭터={situation.HeroId} 보유={string.Join(",", situation.OwnedRelics)} 아군={string.Join(",", situation.AllyHeroes)} 아군 칩={string.Join(",", situation.AllyRelics)} 맵={situation.MapId} "
                 + $"보유 키워드={string.Join(",", owned)} 가중치={weights?.ToString() ?? "없음"} "
                 + $"판정={string.Join(" / ", options.Select((o, i) => $"{o.RelicId}({o.Grade},{infos[i].Keyword})={advice[i]?.Verdict.ToString() ?? "없음"}{(warnings[i] != null ? "+키워드경고" : "")}"))}");
     }

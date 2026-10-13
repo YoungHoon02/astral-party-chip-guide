@@ -20,7 +20,7 @@ TemplateTool  설정 키를 누르면 게임의 칩·캐릭터·맵 테이블을
 | 구성 요소 | 책임 | 코드 |
 |---|---|---|
 | ChipScreenWatcher | 칩 선택 창과 칩 카드 찾기, 선택지 변경 감지 | `src/Plugin/Game/ChipScreen.cs` |
-| GameStateReader | 캐릭터·보유 칩·아군·맵 읽기 | `src/Plugin/Game/GameState.cs` |
+| GameStateReader | 캐릭터·보유 칩·아군·아군 보유 칩·맵 읽기 | `src/Plugin/Game/GameState.cs` |
 | PvE 게이트 | PvE 여부 판정 | `src/Plugin/Game/PveGate.cs` |
 | TemplateTool | 게임 테이블을 `names.json`으로 출력 | `src/Plugin/Game/GameTables.cs` |
 | ChipAdvisor | 판정 계산 (게임 의존 없음) | `src/Core/ChipAdvisor.cs` |
