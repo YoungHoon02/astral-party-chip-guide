@@ -213,7 +213,7 @@ internal static class BadgeView
     {
         Verdict.Core => ("★ 코어", new Color(1f, 0.81f, 0.2f, 0.95f), new Color(0.1f, 0.1f, 0.1f, 1f)),
         Verdict.Good => ("○ 무난", new Color(0.23f, 0.56f, 0.36f, 0.95f), Color.white),
-        _ => ("× 비추", new Color(0.71f, 0.23f, 0.23f, 0.95f), Color.white),
+        _ => ("× 보류", new Color(0.71f, 0.23f, 0.23f, 0.95f), Color.white),
     };
 
     private static string Symbol(Verdict verdict) => verdict switch

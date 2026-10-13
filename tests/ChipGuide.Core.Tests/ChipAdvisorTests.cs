@@ -36,7 +36,7 @@ public class ChipAdvisorTests
         var roles = new Dictionary<int, Role> { [Papara] = Role.Dealer };
         var rules = new RuleSet(new[]
         {
-            new ChipRule(Ids(Glove), Verdict.Avoid, "딜러 공용 비추천", 1, new Condition(Roles: new HashSet<Role> { Role.Dealer, Role.Flex })),
+            new ChipRule(Ids(Glove), Verdict.Avoid, "딜러 공용 보류", 1, new Condition(Roles: new HashSet<Role> { Role.Dealer, Role.Flex })),
             ForCharacter(Papara, new[] { Glove }, Verdict.Core, "파파라 코어"),
         }, roles);
 
@@ -44,7 +44,7 @@ public class ChipAdvisorTests
 
         Assert.Equal(Verdict.Core, advice[0]!.Verdict);
         Assert.Equal("파파라 코어", advice[0]!.Reason);
-        Assert.Equal(new[] { new Note(Verdict.Avoid, "딜러 공용 비추천") }, advice[0]!.Notes);
+        Assert.Equal(new[] { new Note(Verdict.Avoid, "딜러 공용 보류") }, advice[0]!.Notes);
     }
 
     [Fact]
@@ -95,11 +95,11 @@ public class ChipAdvisorTests
     }
 
     [Fact]
-    public void 같은_단계에서는_비추천이_이긴다()
+    public void 같은_단계에서는_보류이_이긴다()
     {
         var rules = Rules(
             ForCharacter(Mimi, new[] { Glove }, Verdict.Core, "코어"),
-            ForCharacter(Mimi, new[] { Glove }, Verdict.Avoid, "비추천"));
+            ForCharacter(Mimi, new[] { Glove }, Verdict.Avoid, "보류"));
 
         var advice = ChipAdvisor.Advise(rules, At(Mimi), new[] { new ChipOption(Glove, Grade.Blue) });
 
@@ -112,7 +112,7 @@ public class ChipAdvisorTests
         var rules = new RuleSet(new[]
         {
             new ChipRule(Ids(Glove), Verdict.Good, "공용 무난", 0, new Condition()),
-            new ChipRule(Ids(Glove), Verdict.Avoid, "서포터 공용 비추천", 1, new Condition(Roles: new HashSet<Role> { Role.Support, Role.Flex })),
+            new ChipRule(Ids(Glove), Verdict.Avoid, "서포터 공용 보류", 1, new Condition(Roles: new HashSet<Role> { Role.Support, Role.Flex })),
         }, new Dictionary<int, Role>());
 
         var advice = ChipAdvisor.Advise(rules, At(Mimi), new[] { new ChipOption(Glove, Grade.Blue) });

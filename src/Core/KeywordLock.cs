@@ -36,7 +36,7 @@ public static class KeywordLock
     public const int MaxCoreNames = 4;
 
     // core는 이 캐릭터·상황에서 코어로 판정되는 칩이다. 딜러·서포터를 오가는 캐릭터도 있어
-    // 키워드를 미리 비추 처리하지 않고, 고르는 순간 잃게 되는 코어 칩만 알려 준다.
+    // 키워드를 미리 보류 처리하지 않고, 고르는 순간 잃게 되는 코어 칩만 알려 준다.
     public static string? Warning(IReadOnlySet<Keyword> owned, Keyword chip, IEnumerable<(string Name, Keyword Keyword)>? core = null)
     {
         var lost = WouldLock(owned, chip);

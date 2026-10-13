@@ -288,7 +288,7 @@ public static class RuleBook
         {
             Verdict.Core => "코어",
             Verdict.Good => "무난",
-            _ => "비추천",
+            _ => "보류",
         };
 
         private static Role? ParseRole(JsonElement element) =>
