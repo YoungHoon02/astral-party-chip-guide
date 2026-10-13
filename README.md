@@ -74,7 +74,7 @@ PvE에서 레벨업 칩을 고를 때, **지금 내 상황에 어떤 칩이 좋�
 ## 출처와 감사
 
 - 기본 추천: Feiz님의 [「캐릭터별 나왔을 때 집어가면 좋을 코어 칩 및 플레이 방법 가이드」](https://arca.live/b/astralparty/171581722). 작성자의 허락을 받아 사용했습니다.
-- 공략에 없는 조합은 칩 설명과 캐릭터 스킬([Astral Party 커뮤니티 위키](https://astralparty.miraheze.org/wiki/Characters))로 추정했고, 이유가 `추정:`으로 시작합니다.
+- 공략에 없는 조합은 칩 설명과 캐릭터 스킬([Astral Party 커뮤니티 위키](https://astralparty.miraheze.org/wiki/Characters))로 추정해 보탰습니다. 어떤 판정이 추정인지는 [추천 로직 문서](docs/RECOMMENDATION.md)에 있습니다.
 
 ## v0.1.0
 
