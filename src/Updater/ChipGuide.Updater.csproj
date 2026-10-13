@@ -9,7 +9,7 @@
     <AssemblyName>AstralPartyChipGuideUpdater</AssemblyName>
     <RootNamespace>ChipGuide.Updater</RootNamespace>
     <!-- package.ps1이 플러그인 버전으로 덮어쓴다. 비교 기준은 옆의 플러그인 DLL이다. -->
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
