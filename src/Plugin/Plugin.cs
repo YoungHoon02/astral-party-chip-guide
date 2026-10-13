@@ -13,7 +13,7 @@ public sealed class Plugin : BasePlugin
 {
     public const string Guid = "kr.younghoon02.astralparty.chipguide";
     public const string Name = "AstralPartyChipGuide";
-    public const string Version = "0.1.0";
+    public const string Version = "0.2.0";
 
     internal static ManualLogSource Logger { get; private set; } = null!;
     internal static string Folder { get; private set; } = "";
