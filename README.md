@@ -38,10 +38,15 @@ PvE에서 레벨업 칩을 고를 때, **지금 내 상황에 어떤 칩이 좋�
 
 ## 설치
 
-1. [BepInEx 6 IL2CPP](https://builds.bepinex.dev/projects/bepinex_be)를 Astral Party(INT 클라이언트)에 설치합니다.
-2. [최신 릴리스](https://github.com/YoungHoon02/astral-party-chip-guide/releases/latest)에서 ZIP을 받습니다.
-3. ZIP을 게임의 `BepInEx\plugins\` 안에 풉니다. `BepInEx\plugins\AstralPartyChipGuide\` 폴더가 생기면 됩니다.
-4. 게임을 켜고 로비에 한 번 들어가면 준비가 끝납니다. 그다음부터 PvE 칩 선택 창에 배지가 나옵니다.
+1. [BepInEx 6 IL2CPP](https://builds.bepinex.dev/projects/bepinex_be)를 Astral Party(INT 클라이언트)에 설치하고, 게임을 한 번 켰다 끕니다.
+2. **BepInEx 로그 설정을 바꿉니다.** `BepInEx\config\BepInEx.cfg`를 메모장으로 열어 `[Logging]` 아래의 값을 `false`로 바꾸세요. 기본값 `true`로 두면 일부 환경에서 로고 직후 게임이 꺼집니다.
+   ```ini
+   [Logging]
+   UnityLogListening = false
+   ```
+3. [최신 릴리스](https://github.com/YoungHoon02/astral-party-chip-guide/releases/latest)에서 ZIP을 받습니다.
+4. ZIP을 게임의 `BepInEx\plugins\` 안에 풉니다. `BepInEx\plugins\AstralPartyChipGuide\` 폴더가 생기면 됩니다.
+5. 게임을 켜고 로비에 한 번 들어가면 준비가 끝납니다. 그다음부터 PvE 칩 선택 창에 배지가 나옵니다.
 
 ## 알아 두면 좋은 점
 
@@ -97,4 +102,8 @@ PvE에서 레벨업 칩을 고를 때, **지금 내 상황에 어떤 칩이 좋�
 
 ## 라이선스
 
-MIT 라이선스입니다([LICENSE](LICENSE)). 개발 관련 내용은 [구조 설명](docs/ARCHITECTURE.md)에 있습니다.
+[MIT 라이선스](LICENSE)입니다. 누구나 자유롭게 쓰고, 고치고, 다시 배포할 수 있습니다. 다시 배포할 때는 저작권 고지와 라이선스 문구를 함께 넣어 주세요. 이 모드는 있는 그대로 제공되며, 사용으로 생긴 문제에 대해 책임지지 않습니다.
+
+게임 데이터와 이미지의 권리는 게임 개발사에 있고, 기본 추천 데이터와 역할군 정리의 권리는 각 공략 작성자에게 있습니다.
+
+개발 관련 내용은 [구조 설명](docs/ARCHITECTURE.md)에 있습니다.
