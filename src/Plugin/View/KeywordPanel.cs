@@ -134,10 +134,10 @@ internal static class KeywordPanel
             panel.Call("AddChildAt", background, 0);
             panel.Call("SetSize", width, height);
 
-            var containerWidth = _container!.Get<float>("width");
-            var top = TitleTop(_container) is { } title ? title - height - padding * 0.5f : padding;
-            panel.Call("SetXY", Math.Max(padding, (containerWidth - width) / 2), Math.Max(0f, top));
-            _container.Call("AddChild", panel);
+            var container = _container!;
+            var (x0, y0) = Anchor(container, width, height, padding);
+            panel.Call("SetXY", x0, y0);
+            container.Call("AddChild", panel);
             return panel;
         }
         catch
@@ -148,31 +148,23 @@ internal static class KeywordPanel
         }
     }
 
-    // 창 제목("강화칩을 선택해주세요")은 이름 없는 글자 요소라, 칩 목록보다 위에 있는 글자 중 가장 위의 것을 제목으로 본다.
-    private static float? TitleTop(RuntimeObject container)
+    // "칩 획득 확률" 글자 오른쪽에 세로 가운데를 맞춰 붙인다. 못 찾으면 창 맨 위 가운데에 둔다.
+    private static (float X, float Y) Anchor(RuntimeObject container, float width, float height, float padding)
     {
         try
         {
-            var listTop = container.Field("list_Relic")?.Get<float>("y") ?? float.MaxValue;
-            float? top = null;
-            var count = container.Get<int>("numChildren");
-            for (var i = 0; i < count; i++)
-            {
-                var child = container.Call("GetChildAt", i);
-                if (child == null || child.TypeName is not ("GTextField" or "GRichTextField") || !child.Get<bool>("visible")) continue;
-                var y = child.Get<float>("y");
-                if (y < listTop && (top == null || y < top)) top = y;
-            }
-            return top;
+            var probability = container.Field("txt_Probability");
+            if (probability != null && probability.Get<bool>("visible"))
+                return (probability.Get<float>("x") + probability.Get<float>("width") + padding * 2,
+                    probability.Get<float>("y") + (probability.Get<float>("height") - height) / 2);
         }
         catch (Exception ex)
         {
-            Plugin.Logger.LogWarning($"칩 선택 창 제목 위치를 읽지 못해 창 맨 위에 둡니다: {ex.Message}");
-            return null;
+            Plugin.Logger.LogWarning($"칩 획득 확률 위치를 읽지 못해 창 맨 위에 둡니다: {ex.Message}");
         }
+        return (Math.Max(padding, (container.Get<float>("width") - width) / 2), padding);
     }
 
-    // 마우스를 올렸을 때 이름을 보여 주려면 아이콘만 터치를 받아야 한다. 배경과 글자는 터치를 받지 않는다.
     // 게임 아이콘은 게임 전용 로더로만 불러와지므로 칩 카드의 아이콘 로더와 같은 클래스로 만든다.
     private static RuntimeObject ChipIconLoader(string url, float size, bool grayed)
     {
