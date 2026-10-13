@@ -23,13 +23,15 @@ internal static class KeywordPanel
     private static IReadOnlyList<KeywordRow> _rows = Array.Empty<KeywordRow>();
     private static IReadOnlySet<Keyword> _preview = new HashSet<Keyword>();
     private static int _textSize;
+    private static IntPtr _iconClass;
 
     internal static bool Alive => GameUi.Alive(_panel);
 
-    internal static void Show(RuntimeObject container, IReadOnlyList<KeywordRow> rows, int textSize)
+    internal static void Show(RuntimeObject container, IReadOnlyList<KeywordRow> rows, int textSize, IntPtr iconClass)
     {
         Clear();
         _container = container;
+        _iconClass = iconClass;
         _rows = rows;
         _textSize = textSize;
         _panel = Build();
@@ -171,9 +173,10 @@ internal static class KeywordPanel
     }
 
     // 마우스를 올렸을 때 이름을 보여 주려면 아이콘만 터치를 받아야 한다. 배경과 글자는 터치를 받지 않는다.
+    // 게임 아이콘은 게임 전용 로더로만 불러와지므로 칩 카드의 아이콘 로더와 같은 클래스로 만든다.
     private static RuntimeObject ChipIconLoader(string url, float size, bool grayed)
     {
-        var icon = RuntimeObject.New(GameUi.Require("FairyGUI", "GLoader"));
+        var icon = RuntimeObject.New(_iconClass != IntPtr.Zero ? _iconClass : GameUi.Require("FairyGUI", "GLoader"));
         icon.Call("SetSize", size, size);
         icon.Set("fill", FillScale);
         icon.Set("url", url);

@@ -14,6 +14,7 @@ internal sealed unsafe class RuntimeObject
 
     internal IntPtr Pointer => _handle.Pointer;
     private IntPtr Klass => IL2CPP.il2cpp_object_get_class(Pointer);
+    internal IntPtr ClassPointer => Klass;
     internal string TypeName => Meta.ClassName(Klass);
 
     private static RuntimeObject? Of(IntPtr pointer) => pointer == IntPtr.Zero ? null : new RuntimeObject(pointer);

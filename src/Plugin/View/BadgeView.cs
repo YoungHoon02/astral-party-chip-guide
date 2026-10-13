@@ -33,7 +33,7 @@ internal static class BadgeView
         if (keywords != null && cards.Count > 0)
         {
             var title = TitleSize(cards[0].Item);
-            KeywordPanel.Show(container, keywords, title > 0 ? (int)Math.Round(title * 0.7f) : FallbackTooltipText);
+            KeywordPanel.Show(container, keywords, title > 0 ? (int)Math.Round(title * 0.7f) : FallbackTooltipText, IconClass(cards[0].Item));
         }
     }
 
@@ -56,6 +56,22 @@ internal static class BadgeView
         HideTooltip();
         _tooltip = CreateTooltip(hovered);
         _tooltipFor = hovered.Item.Pointer;
+    }
+
+    private static IntPtr IconClass(RuntimeObject item)
+    {
+        try
+        {
+            var loader = item.Field("loader_Icon");
+            if (loader == null) return IntPtr.Zero;
+            if (Plugin.Diagnostics.Value) Plugin.Logger.LogInfo($"[진단] 칩 아이콘 로더: {loader.TypeName}");
+            return loader.ClassPointer;
+        }
+        catch (Exception ex)
+        {
+            Plugin.Logger.LogWarning($"칩 아이콘 로더를 읽지 못해 기본 로더를 씁니다: {ex.Message}");
+            return IntPtr.Zero;
+        }
     }
 
     private static bool Selected(RuntimeObject item)
