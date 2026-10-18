@@ -117,11 +117,14 @@ internal static class KeywordPanel
             var labels = rows.Select(row => row.Select(segment => Ui.Text(segment.Text, _textSize, segment.Ink, 0f, wrap: false)).ToList()).ToList();
             var lineHeight = labels.SelectMany(row => row).Max(label => label.Get<float>("height"));
             var iconSize = lineHeight * 0.9f;
-            var width = 0f;
+            var rowWidths = rows.Select((row, r) => row.Select((segment, i) =>
+                (i > 0 ? padding * 2 : 0f) + labels[r][i].Get<float>("width") + segment.Chips.Count * (2f + iconSize)).Sum()).ToList();
+            var contentWidth = rowWidths.Max();
             for (var r = 0; r < rows.Count; r++)
             {
                 var y = padding + lineHeight * r;
-                var x = padding * 1.5f;
+                // 막힌 키워드에 칩 아이콘이 붙으면 줄 길이가 달라져서, 줄마다 패널 가운데에 맞춘다.
+                var x = padding * 1.5f + (contentWidth - rowWidths[r]) / 2;
                 for (var i = 0; i < labels[r].Count; i++)
                 {
                     if (i > 0) x += padding * 2;
@@ -138,8 +141,8 @@ internal static class KeywordPanel
                         x += iconSize;
                     }
                 }
-                width = Math.Max(width, x + padding * 1.5f);
             }
+            var width = contentWidth + padding * 3;
             var height = lineHeight * rows.Count + padding * 2;
             var background = Ui.Graph(width, height, Background, Math.Min(height / 2, padding * 2));
             panel.Call("AddChildAt", background, 0);
