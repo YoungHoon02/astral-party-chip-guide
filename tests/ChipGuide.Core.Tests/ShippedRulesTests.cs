@@ -23,12 +23,13 @@ public class ShippedRulesTests
 
     private static Situation At(string hero, string when)
     {
-        var (key, value) = when.Split(':') is [var k, var v] ? (k, v) : ("", "");
+        var parts = when.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(p => p.Split(':')).ToDictionary(p => p[0], p => p[1]);
+        string[] Value(string key) => parts.TryGetValue(key, out var value) ? new[] { value } : Array.Empty<string>();
         return new Situation(Hero(hero),
-            ChipIds(key == "owned" ? new[] { value } : Array.Empty<string>()),
-            key == "ally" ? new HashSet<int> { Hero(value) } : new HashSet<int>(),
-            key == "map" ? Names.Map(value)!.First() : 0,
-            ChipIds(key == "allyOwned" ? new[] { value } : Array.Empty<string>()));
+            ChipIds(Value("owned")),
+            Value("ally").Select(Hero).ToHashSet(),
+            Value("map") is [var map] ? Names.Map(map)!.First() : 0,
+            ChipIds(Value("allyOwned")));
     }
 
     [Fact]
@@ -67,7 +68,30 @@ public class ShippedRulesTests
     [InlineData("루카", "이글 아이 조준경", Grade.Orange, "", Verdict.Avoid)]
     [InlineData("패니", "휴대용 선풍기", Grade.Purple, "ally:린", Verdict.Core)]
     [InlineData("패니", "휴대용 선풍기", Grade.Purple, "", Verdict.Good)]
-    [InlineData("질 스팅레이", "우정 배지", Grade.Purple, "allyOwned:아드레날린", Verdict.Avoid)]
+    [InlineData("패니", "휴대용 선풍기", Grade.Blue, "ally:보니", Verdict.Good)]
+    [InlineData("패니", "휴대용 선풍기", Grade.Purple, "ally:보니", Verdict.Core)]
+    [InlineData("루루", "휴대용 선풍기", Grade.Blue, "", Verdict.Avoid)]
+    [InlineData("루루", "휴대용 선풍기", Grade.Blue, "ally:보니", Verdict.Good)]
+    [InlineData("미미", "휴대용 선풍기", Grade.Purple, "ally:보니", Verdict.Core)]
+    [InlineData("루루", "마법 화살통", Grade.Purple, "ally:린", Verdict.Good)]
+    [InlineData("루루", "마법 화살통", Grade.Purple, "ally:보니", Verdict.Good)]
+    [InlineData("질 스팅레이", "우정 배지", Grade.Purple, "allyOwned:아드레날린", Verdict.Good)]
+    [InlineData("토노 한나", "우정 배지", Grade.Purple, "allyOwned:아드레날린", Verdict.Avoid)]
+    [InlineData("알라나", "아드레날린", Grade.Orange, "ally:질 스팅레이", Verdict.Good)]
+    [InlineData("알라나", "아드레날린", Grade.Orange, "ally:도로시 헤이즈", Verdict.Avoid)]
+    [InlineData("알라나", "숫돌", Grade.Purple, "ally:판다맨", Verdict.Avoid)]
+    [InlineData("파파라", "숫돌", Grade.Purple, "ally:루루", Verdict.Core)]
+    [InlineData("테루", "슈팅 스타", Grade.Purple, "owned:복싱 글러브;map:마법 학교", Verdict.Avoid)]
+    [InlineData("마무시", "ATM기", Grade.Blue, "allyOwned:ATM기", Verdict.Good)]
+    [InlineData("루루", "ATM기", Grade.Blue, "allyOwned:ATM기", Verdict.Core)]
+    [InlineData("유메", "책갈피", Grade.Purple, "", null)]
+    [InlineData("나르디스", "커터칼", Grade.Purple, "", Verdict.Good)]
+    [InlineData("나르디스", "커터칼", Grade.Purple, "owned:비타민 알약", Verdict.Core)]
+    [InlineData("린", "책갈피", Grade.Purple, "", Verdict.Core)]
+    [InlineData("린", "전기 코어", Grade.Purple, "", Verdict.Good)]
+    [InlineData("타치바나 셰리", "쇼크 글러브", Grade.Purple, "", Verdict.Core)]
+    [InlineData("코마치", "휴대용 선풍기", Grade.Blue, "", Verdict.Good)]
+    [InlineData("토노 한나", "한나 인형", Grade.Orange, "map:이변 도서관", Verdict.Good)]
     [InlineData("사이크스", "슈팅 스타", Grade.Orange, "map:유령 골목", Verdict.Core)]
     [InlineData("미미", "슈팅 스타", Grade.Orange, "map:유령 골목", Verdict.Good)]
     [InlineData("펭", "타겟 보드", Grade.Blue, "", Verdict.Good)]
