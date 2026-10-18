@@ -53,12 +53,13 @@
 | 키 | 설명 |
 |---|---|
 | `version` | 반드시 `1` |
-| `roles` | 포지션별 공용 추천. `common`(모두), `dealer`, `support`. 각각 `core`/`good`/`avoid` 목록을 가집니다. |
-| `characters` | 캐릭터별 추천. `role`은 `dealer`, `support`, `flex`(딜러·서포터 모두 가능한 캐릭터). `core`/`good`/`avoid` 목록과 칩별 이유 `why`를 가집니다. |
+| `roles` | 포지션별 공용 추천. `common`(모두), `dealer`, `support`, `skill`. 각각 `core`/`good`/`avoid` 목록을 가집니다. |
+| `characters` | 캐릭터별 추천. `role`은 `dealer`(공격력으로 싸우는 딜러), `support`, `flex`(딜러·서포터 모두 가능한 캐릭터), `skill`(효과 카드·스킬 피해로 싸우는 스킬 딜러) 중 하나입니다. `core`/`good`/`avoid` 목록과 칩별 이유 `why`를 가집니다. |
 | `rules` | 조건부 규칙. `when`, `chip`, `verdict`, `why`가 모두 필요하고 `minGrade`는 선택입니다. |
 | 목록 항목 | 칩 이름 문자열, 또는 `{ "chip": "이름", "why": "이유", "minGrade": "purple" }` 객체 |
 
 - `characters`에 없는 캐릭터는 포지션을 모르므로 `roles.common`만 적용됩니다.
+- 역할별로 받는 공용 목록은 이렇습니다. `dealer`는 `roles.dealer`, `support`는 `roles.support`, `flex`는 둘 다 받습니다. `skill`은 `roles.skill`만 받습니다. 공격력 칩이 효과 카드 피해에 들어가지 않으므로 딜러 공용을 물려받지 않습니다.
 - 이유를 쓰지 않으면 `미미 코어`처럼 기본 문구가 나옵니다.
 - 이름 하나가 같은 칩의 모든 등급을 가리킵니다. `복싱 글러브 - 초급`처럼 단계까지 쓴 전체 이름은 그 칩만 가리킵니다.
 
@@ -85,7 +86,7 @@
 | `allyOwned` | 나를 뺀 아군 중 누군가가 가진 칩 |
 | `map` | 현재 맵 |
 | `character` | 내 캐릭터 |
-| `role` | 내 캐릭터의 `role`(`dealer`, `support`, `flex`). `roles` 블록과 달리 `flex`를 딜러·서포터에 넣지 않고 그대로 비교합니다 |
+| `role` | 내 캐릭터의 `role`(`dealer`, `support`, `flex`, `skill`). `roles` 블록과 달리 `flex`를 딜러·서포터에 넣지 않고 그대로 비교합니다 |
 
 서로 다른 조건 종류는 **모두 만족해야** 하고(AND), 한 조건의 목록 안에서는 **하나만 맞으면** 됩니다(OR). 예를 들어 `{ "map": ["워터 타운", "유령 골목"], "owned": ["아드레날린"] }`은 두 맵 중 한 곳이면서 아드레날린을 가졌을 때 적용됩니다.
 
@@ -96,7 +97,7 @@
 | 단계 | 규칙 종류 |
 |---|---|
 | 0 | `roles.common` |
-| 1 | `roles.dealer`, `roles.support` |
+| 1 | `roles.dealer`, `roles.support`, `roles.skill` |
 | 2 | `characters` 항목 |
 | 3 | 조건 1종 `rules` |
 | 4 | 조건 2종 `rules` |

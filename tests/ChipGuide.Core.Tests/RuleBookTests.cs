@@ -207,6 +207,36 @@ public class RuleBookTests
     }
 
     [Fact]
+    public void 스킬_딜러는_공용과_스킬_딜러_기본값만_받는다()
+    {
+        const string json = """
+        {
+          "version": 1,
+          "roles": {
+            "common": { "good": ["아드레날린"] },
+            "dealer": { "core": ["커터칼"] },
+            "support": { "good": ["손풍기"] },
+            "skill": { "avoid": ["커터칼"] }
+          },
+          "characters": { "미미": { "role": "skill" } },
+          "rules": [ { "when": { "role": ["skill"] }, "chip": "손풍기", "verdict": "good", "why": "스킬 딜러만" } ]
+        }
+        """;
+
+        Assert.Empty(RuleBook.Load(json, Names).Errors);
+
+        var common = Judge(json, At(3), 100, Grade.Purple)!;
+        Assert.Equal((Verdict.Good, "공용 무난"), (common.Verdict, common.Reason));
+
+        var cutter = Judge(json, At(3), 300, Grade.Purple)!;
+        Assert.Equal((Verdict.Avoid, "스킬 딜러 공용 보류"), (cutter.Verdict, cutter.Reason));
+        Assert.Empty(cutter.Notes);
+
+        var fan = Judge(json, At(3), 200, Grade.Blue)!;
+        Assert.Equal((Verdict.Good, "스킬 딜러만"), (fan.Verdict, fan.Reason));
+    }
+
+    [Fact]
     public void 역할이_없는_캐릭터는_공용만_받는다()
     {
         const string json = """

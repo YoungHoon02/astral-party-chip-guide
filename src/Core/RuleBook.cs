@@ -40,7 +40,7 @@ public static class RuleBook
                 var path = $"roles.{scope.Name}";
                 if (RoleScope(scope.Name) is not { } target)
                 {
-                    Errors.Add($"{path}: common, dealer, support 중 하나여야 합니다");
+                    Errors.Add($"{path}: common, dealer, support, skill 중 하나여야 합니다");
                     continue;
                 }
                 if (!Expect(scope.Value, JsonValueKind.Object, path)) continue;
@@ -67,7 +67,7 @@ public static class RuleBook
                     if (ParseRole(roleElement) is { } role)
                         foreach (var id in heroes) Roles[id] = role;
                     else
-                        Errors.Add($"{path}.role: dealer, support, flex 중 하나여야 합니다");
+                        Errors.Add($"{path}.role: dealer, support, flex, skill 중 하나여야 합니다");
                 }
                 var whyMap = body.TryGetProperty("why", out var why) ? ReadWhyMap(why, $"{path}.why") : null;
                 ReadLists(body, path, character.Name, 2, new Condition(Character: heroes), whyMap);
@@ -243,7 +243,7 @@ public static class RuleBook
                     result.Add(role);
                 }
             if (result.Count > 0) return result;
-            Errors.Add($"{path}: dealer, support, flex 중 하나 이상이 든 배열이어야 합니다");
+            Errors.Add($"{path}: dealer, support, flex, skill 중 하나 이상이 든 배열이어야 합니다");
             return null;
         }
 
@@ -310,6 +310,7 @@ public static class RuleBook
             "common" => (0, null, "공용"),
             "dealer" => (1, new HashSet<Role> { Role.Dealer, Role.Flex }, "딜러 공용"),
             "support" => (1, new HashSet<Role> { Role.Support, Role.Flex }, "서포터 공용"),
+            "skill" => (1, new HashSet<Role> { Role.Skill }, "스킬 딜러 공용"),
             _ => null,
         };
 
@@ -326,6 +327,7 @@ public static class RuleBook
                 "dealer" => Role.Dealer,
                 "support" => Role.Support,
                 "flex" => Role.Flex,
+                "skill" => Role.Skill,
                 _ => null,
             };
 
