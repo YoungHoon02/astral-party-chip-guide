@@ -5,9 +5,10 @@ namespace ChipGuide.Core.Tests;
 public class ShippedRulesTests
 {
     private static readonly string Root = FindRoot();
+    internal static readonly string RulesPath = Path.Combine(Root, "rules", "rules.json");
     private static readonly string NamesJson = File.ReadAllText(Path.Combine(Root, "tests", "ChipGuide.Core.Tests", "Fixtures", "names.json"));
-    private static readonly NameTable Names = NameTable.Parse(NamesJson);
-    private static readonly RuleLoad Load = RuleBook.Load(File.ReadAllText(Path.Combine(Root, "rules", "rules.json")), Names);
+    internal static readonly NameTable Names = NameTable.Parse(NamesJson);
+    private static readonly RuleLoad Load = RuleBook.Load(File.ReadAllText(RulesPath), Names);
 
     private static string FindRoot()
     {

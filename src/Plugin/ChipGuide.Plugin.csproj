@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Core\ChipGuide.Core.csproj" />
+    <EmbeddedResource Include="..\..\rules\rules.json" LogicalName="ChipGuide.rules.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +30,5 @@
 
   <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true'">
     <Copy SourceFiles="$(TargetPath);$(TargetDir)ChipGuide.Core.dll" DestinationFolder="$(PluginDeployDir)" />
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\..\..\rules\rules.json" DestinationFolder="$(PluginDeployDir)" Condition="!Exists('$(PluginDeployDir)\rules.json')" />
   </Target>
 </Project>

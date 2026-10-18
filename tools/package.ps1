@@ -28,7 +28,6 @@ $files = @(
     @{ Source = (Join-Path $bin 'ChipGuide.Core.dll'); Name = 'ChipGuide.Core.dll' },
     @{ Source = (Join-Path $updaterBin 'AstralPartyChipGuideUpdater.exe'); Name = 'AstralPartyChipGuideUpdater.exe' },
     @{ Source = (Join-Path $updaterBin 'AstralPartyChipGuideUpdater.exe.config'); Name = 'AstralPartyChipGuideUpdater.exe.config' },
-    @{ Source = (Join-Path $root 'rules\rules.json'); Name = 'rules.json' },
     @{ Source = (Join-Path $root 'README.md'); Name = 'README.md' },
     @{ Source = (Join-Path $root 'LICENSE'); Name = 'LICENSE' }
 )
