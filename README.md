@@ -1,5 +1,20 @@
 # Astral Party 칩 선택 가이드
 
+> [!NOTE]
+> **Windows 보안(Defender)이 다운로드를 지우나요?** 서명되지 않은 새 모드 파일이라 `Trojan:Script/Wacatac.H!ml` 같은 **오탐**으로 격리될 수 있습니다. 바이러스가 아니며 소스는 이 저장소에 모두 공개되어 있고, Microsoft에 오탐 신고를 접수했습니다.
+>
+> **이미 지워졌을 때**
+> 1. Windows 보안 → 바이러스 및 위협 방지 → **보호 기록**
+> 2. `AstralPartyChipGuide` 항목을 열어 **작업 → 허용**(복원)
+>
+> **미리 막으려면**
+> 1. Windows 보안 → 바이러스 및 위협 방지 → **설정 관리** → **제외 추가 또는 제거**
+> 2. **제외 추가 → 폴더**에서 다운로드 폴더(또는 모드를 풀 폴더)를 선택한 뒤 다시 다운로드
+>
+> **zip이 안 풀릴 때**: zip 우클릭 → 속성 → **차단 해제** 체크 후 압축 해제
+>
+> Chrome이 경고하면 다운로드 목록(`Ctrl+J`)에서 `⋮` → **보관**을 누르세요. 제외는 이 모드 설치가 끝나면 지워도 됩니다.
+
 [![최신 릴리스](https://img.shields.io/github/v/release/YoungHoon02/astral-party-chip-guide?label=%EC%B5%9C%EC%8B%A0%20%EB%A6%B4%EB%A6%AC%EC%8A%A4&color=2ea44f)](https://github.com/YoungHoon02/astral-party-chip-guide/releases/latest)
 [![다운로드](https://img.shields.io/github/downloads/YoungHoon02/astral-party-chip-guide/total?label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C)](https://github.com/YoungHoon02/astral-party-chip-guide/releases)
 [![BepInEx 6 IL2CPP](https://img.shields.io/badge/BepInEx-6%20IL2CPP-blue)](https://builds.bepinex.dev/projects/bepinex_be)
