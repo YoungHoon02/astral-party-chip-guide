@@ -1,20 +1,5 @@
 # Astral Party 칩 선택 가이드
 
-> [!NOTE]
-> **Windows 보안(Defender)이 다운로드를 지우나요?** 서명되지 않은 새 모드 파일이라 `Trojan:Script/Wacatac.H!ml` 같은 **오탐**으로 격리될 수 있습니다. 바이러스가 아니며 소스는 이 저장소에 모두 공개되어 있고, Microsoft에 오탐 신고를 접수했습니다.
->
-> **이미 지워졌을 때**
-> 1. Windows 보안 → 바이러스 및 위협 방지 → **보호 기록**
-> 2. `AstralPartyChipGuide` 항목을 열어 **작업 → 허용**(복원)
->
-> **미리 막으려면**
-> 1. Windows 보안 → 바이러스 및 위협 방지 → **설정 관리** → **제외 추가 또는 제거**
-> 2. **제외 추가 → 폴더**에서 다운로드 폴더(또는 모드를 풀 폴더)를 선택한 뒤 다시 다운로드
->
-> **zip이 안 풀릴 때**: zip 우클릭 → 속성 → **차단 해제** 체크 후 압축 해제
->
-> Chrome이 경고하면 다운로드 목록(`Ctrl+J`)에서 `⋮` → **보관**을 누르세요. 제외는 이 모드 설치가 끝나면 지워도 됩니다.
-
 [![최신 릴리스](https://img.shields.io/github/v/release/YoungHoon02/astral-party-chip-guide?label=%EC%B5%9C%EC%8B%A0%20%EB%A6%B4%EB%A6%AC%EC%8A%A4&color=2ea44f)](https://github.com/YoungHoon02/astral-party-chip-guide/releases/latest)
 [![다운로드](https://img.shields.io/github/downloads/YoungHoon02/astral-party-chip-guide/total?label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C)](https://github.com/YoungHoon02/astral-party-chip-guide/releases)
 [![BepInEx 6 IL2CPP](https://img.shields.io/badge/BepInEx-6%20IL2CPP-blue)](https://builds.bepinex.dev/projects/bepinex_be)
@@ -122,6 +107,7 @@ F10을 누르면 모드 표시를 한 번에 숨기거나 다시 보여 줍니�
 - 기본 추천: Feiz님의 [「캐릭터별 나왔을 때 집어가면 좋을 코어 칩 및 플레이 방법 가이드」](https://arca.live/b/astralparty/171581722). 작성자의 허락을 받아 사용했습니다.
 - 역할군 가중치 정리: [아스트랄 파티의 역할군과 칩 등장 보정](https://arca.live/b/astralparty/181959083), [칩 역할군과 속성 도감](https://arca.live/b/astralparty/185223225) (작성자 허락). 표시하는 값은 게임 데이터에서 직접 읽으며, 글의 등장 확률 설명은 검증되지 않아 따르지 않습니다.
 - 맵별·아군 칩별 판정은 [아스트랄 파티 채널](https://arca.live/b/astralparty)의 공략·후기 글과 게임 데이터를 함께 보고 정했습니다.
+- 디시인사이드 [아스트랄 파티 갤러리](https://gall.dcinside.com/mgallery/board/lists/?id=astralparty)의 공략·후기 글도 판정을 정할 때 참고했습니다.
 - 공략에 없는 조합은 칩 설명과 캐릭터 스킬([Astral Party 커뮤니티 위키](https://astralparty.miraheze.org/wiki/Characters))로 추정해 보탰습니다. 어떤 판정이 추정인지는 [추천 로직 문서](docs/RECOMMENDATION.md)에 있습니다.
 
 ## v0.4.1
@@ -130,7 +116,6 @@ F10을 누르면 모드 표시를 한 번에 숨기거나 다시 보여 줍니�
 
 - **기본 규칙을 `rules.default.json`으로 따로 넣었습니다.** 추천 내용과 사용법은 그대로이고, 모드를 업데이트하면 `rules.json`이 새 기본 규칙으로 자동으로 바뀌는 것도 같습니다.
 - 업데이트하면 플러그인 폴더에 `rules.default.json`이 새로 생깁니다. 지우지 마세요. 지워도 쓰던 `rules.json`이 그대로 쓰일 뿐입니다.
-- 그래도 다운로드가 막히면 저장소 README 맨 위의 해결 방법을 따르세요.
 
 ## v0.4.0
 
