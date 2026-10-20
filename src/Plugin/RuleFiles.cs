@@ -4,10 +4,9 @@ namespace ChipGuide.Plugin;
 
 internal sealed class RuleFiles
 {
-    private const string BundledResource = "ChipGuide.rules.json";
-
     private readonly string _names;
     private readonly string _rules;
+    private readonly string _default;
     private (DateTime Names, DateTime Rules) _stamp;
     private string? _fallback;
 
@@ -15,21 +14,21 @@ internal sealed class RuleFiles
     {
         _names = Path.Combine(folder, "names.json");
         _rules = Path.Combine(folder, "rules.json");
+        _default = Path.Combine(folder, "rules.default.json");
     }
 
     internal string? ReadNames() => Read(_names);
     internal string? ReadRules() => _fallback ?? Read(_rules);
 
-    // 파일을 못 바꾸면 이번 실행 동안 플러그인에 든 기본 규칙을 쓴다. 옛 규칙으로 판정하는 것보다 낫다.
+    // 파일을 못 바꾸면 이번 실행 동안 기본 규칙을 직접 쓴다. 옛 규칙으로 판정하는 것보다 낫다.
     internal void Update(string version, Action<string> log)
     {
-        using var stream = typeof(RuleFiles).Assembly.GetManifestResourceStream(BundledResource);
-        if (stream == null)
+        if (!File.Exists(_default))
         {
-            log($"플러그인에 기본 규칙({BundledResource})이 없어 rules.json을 그대로 씁니다.");
+            log($"{Path.GetFileName(_default)}가 없어 rules.json을 그대로 씁니다.");
             return;
         }
-        var bundled = new StreamReader(stream).ReadToEnd();
+        var bundled = File.ReadAllText(_default);
         try
         {
             var plan = RuleUpdate.Plan(File.Exists(_rules) ? File.ReadAllText(_rules) : null, bundled, version);
@@ -45,7 +44,7 @@ internal sealed class RuleFiles
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             _fallback = bundled;
-            log($"rules.json을 새 기본 규칙으로 바꾸지 못했습니다({ex.Message}). 이번 실행은 플러그인에 든 기본 규칙을 씁니다.");
+            log($"rules.json을 새 기본 규칙으로 바꾸지 못했습니다({ex.Message}). 이번 실행은 {Path.GetFileName(_default)}의 기본 규칙을 씁니다.");
         }
     }
 

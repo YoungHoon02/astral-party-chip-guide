@@ -14,7 +14,7 @@ EventSystem.Update Postfix (프레임당 1회)
  └ CoreStrip           확인 버튼 아래 코어 칩 아이콘 줄
 
 RuleBook      rules.json 로드·검증, 파일이 바뀌면 다시 읽음
-RuleUpdate    시작할 때 DLL에 든 기본 규칙과 비교해 rules.json 설치·교체
+RuleUpdate    시작할 때 `rules.default.json`과 비교해 rules.json 설치·교체
 TemplateTool  게임 데이터가 준비되면 칩·캐릭터·맵 테이블을 names.json으로 자동 출력
 ```
 
@@ -29,7 +29,7 @@ TemplateTool  게임 데이터가 준비되면 칩·캐릭터·맵 테이블을 
 | ChipAdvisor | 판정 계산 (게임 의존 없음) | `src/Core/ChipAdvisor.cs` |
 | KeywordLock | 키워드 고정 경고 문구. 규칙 파일과 별개로 칩의 `KeyWordType`만으로 판단 | `src/Core/KeywordLock.cs` |
 | RuleBook / RuleSource | 규칙 해석·검증, 실패 시 이전 규칙 유지 | `src/Core/RuleBook.cs`, `RuleSource.cs` |
-| RuleUpdate / RuleFiles | `rules/rules.json`을 DLL에 넣어 두고, 시작할 때 첫 줄의 기본 규칙 지문이 다르면 파일을 바꿈. 직접 고친 흔적이 있으면 `rules.json.bak`으로 백업하고, 쓰지 못하면 그 실행은 내장 규칙을 씀 | `src/Core/RuleUpdate.cs`, `src/Plugin/RuleFiles.cs` |
+| RuleUpdate / RuleFiles | `rules/rules.json`을 `rules.default.json`으로 ZIP에 함께 넣어 두고, 시작할 때 첫 줄의 기본 규칙 지문이 다르면 `rules.json`을 바꿈. 직접 고친 흔적이 있으면 `rules.json.bak`으로 백업하고, 쓰지 못하면 그 실행은 `rules.default.json`의 규칙을 씀. DLL에 내장하지 않는 이유: 큰 텍스트가 든 서명 없는 DLL이 Windows 보안의 머신러닝 오탐(`Trojan:Script/…!ml`)을 불렀음(v0.4.0) | `src/Core/RuleUpdate.cs`, `src/Plugin/RuleFiles.cs` |
 | NameTable | 이름 ↔ ID 변환 | `src/Core/NameTable.cs` |
 | BadgeView | 배지·툴팁 표시와 제거, 선택한 칩 판정 | `src/Plugin/View/BadgeView.cs` |
 | KeywordPanel / CoreStrip | 키워드·가중치 패널, 코어 칩 아이콘 줄 | `src/Plugin/View/KeywordPanel.cs`, `CoreStrip.cs` |
@@ -72,7 +72,7 @@ publish-release.ps1 ─ 게시된 ZIP을 받아 sha256·크기 측정 ─> distr
 
 - `Directory.Build.local.props.example`을 `Directory.Build.local.props`로 복사하고 `BepInExDir`을 자기 게임의 `...\Astral Party\8vJXnINT\BepInEx`로 고칩니다. 이 파일은 git이 무시합니다.
 - 또는 환경 변수 `ASTRAL_PARTY_BEPINEX`에 같은 경로를 넣습니다.
-- 경로가 없거나 틀리면 빌드가 이유를 알려 주며 멈춥니다. `-p:DeployToGame=true`를 붙이면 빌드 결과를 그 폴더의 `plugins\AstralPartyChipGuide\`에 복사합니다. `rules.json`은 복사하지 않고, 게임을 켤 때 DLL에 든 규칙으로 바뀝니다.
+- 경로가 없거나 틀리면 빌드가 이유를 알려 주며 멈춥니다. `-p:DeployToGame=true`를 붙이면 빌드 결과를 그 폴더의 `plugins\AstralPartyChipGuide\`에 복사합니다. `rules/rules.json`을 `rules.default.json`으로 함께 복사하고, 게임을 켤 때 그 파일의 규칙으로 `rules.json`이 바뀝니다.
 
 ### 릴리스 절차
 
@@ -80,7 +80,7 @@ publish-release.ps1 ─ 게시된 ZIP을 받아 sha256·크기 측정 ─> distr
 2. `README.md`에 `## v<버전>` 섹션을 사용자 관점으로 적습니다. 릴리스 본문이 여기서 나옵니다.
 3. `main`을 `origin`에 민 뒤 `tools\publish-release.ps1`을 실행합니다. `tools\package.ps1`로 `dist\AstralPartyChipGuide-v<버전>.zip`을 만들고(확인 프로그램은 플러그인 버전으로 빌드, 같은 이름의 ZIP이 있으면 멈춤), 태그 `v<버전>`과 GitHub 릴리스를 만든 뒤 인덱스를 `distribution`에 올립니다. 인덱스만 실패했으면 `-IndexOnly`로 다시 올립니다.
 
-ZIP만 만들 때는 `tools\package.ps1`만 실행합니다. 최상위 폴더 `AstralPartyChipGuide\`에 두 DLL, 확인 프로그램(`.exe`, `.exe.config`), `README.md`, `LICENSE`가 들어갑니다. `rules.json`은 플러그인 DLL에 들어 있어 ZIP에 넣지 않습니다. ZIP을 덮어써도 이용자가 고친 파일과 부딪히지 않고, 게임을 켤 때 플러그인이 교체합니다.
+ZIP만 만들 때는 `tools\package.ps1`만 실행합니다. 최상위 폴더 `AstralPartyChipGuide\`에 두 DLL, 확인 프로그램(`.exe`, `.exe.config`), `README.md`, `LICENSE`, 기본 규칙 `rules.default.json`이 들어갑니다. ZIP에는 `rules.json`을 넣지 않아 덮어써도 이용자가 고친 파일과 부딪히지 않고, 게임을 켤 때 플러그인이 `rules.default.json`을 보고 교체합니다.
 
 ## 게임 업데이트 뒤 깨졌을 때
 
