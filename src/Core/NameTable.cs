@@ -9,12 +9,21 @@ public sealed class NameTable
     private readonly Dictionary<string, HashSet<int>> _heroes = new(StringComparer.Ordinal);
     private readonly Dictionary<string, HashSet<int>> _maps = new(StringComparer.Ordinal);
     private readonly Dictionary<int, Grade> _grades = new();
+    private NameTable? _fallback;
 
     public IReadOnlyDictionary<int, Grade> ChipGrades => _grades;
 
-    public IReadOnlySet<int>? Chip(string name) => Find(_chipsByName, name) ?? Find(_chipsByBase, name);
-    public IReadOnlySet<int>? Hero(string name) => Find(_heroes, name);
-    public IReadOnlySet<int>? Map(string name) => Find(_maps, name);
+    public IReadOnlySet<int>? Chip(string name) => Find(_chipsByName, name) ?? Find(_chipsByBase, name) ?? _fallback?.Chip(name);
+    public IReadOnlySet<int>? Hero(string name) => Find(_heroes, name) ?? _fallback?.Hero(name);
+    public IReadOnlySet<int>? Map(string name) => Find(_maps, name) ?? _fallback?.Map(name);
+
+    // 규칙은 한국어 이름으로 쓰지만 게임 언어가 바뀌거나 한글 패치가 늦으면 names.json이 다른 언어로 만들어진다.
+    // 그때도 같은 id로 찾도록 지금 게임에 없는 이름은 동봉한 한국어 참조표에서 찾는다.
+    public NameTable WithFallback(NameTable? fallback)
+    {
+        _fallback = fallback;
+        return this;
+    }
 
     public static string BaseName(string name)
     {

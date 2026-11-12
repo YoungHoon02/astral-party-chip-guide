@@ -6,12 +6,14 @@ public sealed class RuleSource
 
     private readonly Func<string?> _readNames;
     private readonly Func<string?> _readRules;
+    private readonly Func<string?>? _readReference;
     private readonly Action<string> _log;
 
-    public RuleSource(Func<string?> readNames, Func<string?> readRules, Action<string> log)
+    public RuleSource(Func<string?> readNames, Func<string?> readRules, Action<string> log, Func<string?>? readReference = null)
     {
         _readNames = readNames;
         _readRules = readRules;
+        _readReference = readReference;
         _log = log;
     }
 
@@ -34,7 +36,7 @@ public sealed class RuleSource
                 _log("rules.json이 없습니다.");
                 return false;
             }
-            var load = RuleBook.Load(rulesJson, NameTable.Parse(namesJson));
+            var load = RuleBook.Load(rulesJson, NameTable.Parse(namesJson).WithFallback(Reference()));
             foreach (var error in load.Errors.Take(MaxErrorsLogged)) _log(error);
             if (load.Errors.Count > MaxErrorsLogged)
                 _log($"... 외 {load.Errors.Count - MaxErrorsLogged}건의 오류가 더 있습니다. 게임 언어와 names.json이 맞는지 확인하세요.");
@@ -52,6 +54,19 @@ public sealed class RuleSource
         {
             _log($"규칙 파일을 읽지 못했습니다({ex.Message}) — 이전 규칙을 유지합니다.");
             return false;
+        }
+    }
+
+    private NameTable? Reference()
+    {
+        try
+        {
+            return _readReference?.Invoke() is { } json ? NameTable.Parse(json) : null;
+        }
+        catch (Exception ex) when (ex is RuleFormatException or IOException or UnauthorizedAccessException)
+        {
+            _log($"한국어 참조표를 읽지 못했습니다({ex.Message}). names.json의 이름으로만 찾습니다.");
+            return null;
         }
     }
 }

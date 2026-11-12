@@ -25,7 +25,7 @@ internal static class Guide
     {
         _files = new RuleFiles(Plugin.Folder);
         Action<string> log = message => Plugin.Logger.LogInfo($"[규칙] {message}");
-        _rules = new RuleSource(_files.ReadNames, _files.ReadRules, log);
+        _rules = new RuleSource(_files.ReadNames, _files.ReadRules, log, _files.ReadReference);
         Badges.Run(() =>
         {
             _files.Update(Plugin.Version, log);

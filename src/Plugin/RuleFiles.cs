@@ -7,6 +7,7 @@ internal sealed class RuleFiles
     private readonly string _names;
     private readonly string _rules;
     private readonly string _default;
+    private readonly string _reference;
     private (DateTime Names, DateTime Rules) _stamp;
     private string? _fallback;
 
@@ -15,9 +16,13 @@ internal sealed class RuleFiles
         _names = Path.Combine(folder, "names.json");
         _rules = Path.Combine(folder, "rules.json");
         _default = Path.Combine(folder, "rules.default.json");
+        _reference = Path.Combine(folder, ReferenceFile);
     }
 
+    internal const string ReferenceFile = "names.ko.json";
+
     internal string? ReadNames() => Read(_names);
+    internal string? ReadReference() => Read(_reference);
     internal string? ReadRules() => _fallback ?? Read(_rules);
 
     // 파일을 못 바꾸면 이번 실행 동안 기본 규칙을 직접 쓴다. 옛 규칙으로 판정하는 것보다 낫다.

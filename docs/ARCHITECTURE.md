@@ -30,7 +30,7 @@ TemplateTool  게임 데이터가 준비되면 칩·캐릭터·맵 테이블을 
 | KeywordLock | 키워드 고정 경고 문구. 규칙 파일과 별개로 칩의 `KeyWordType`만으로 판단 | `src/Core/KeywordLock.cs` |
 | RuleBook / RuleSource | 규칙 해석·검증, 실패 시 이전 규칙 유지 | `src/Core/RuleBook.cs`, `RuleSource.cs` |
 | RuleUpdate / RuleFiles | `rules/rules.json`을 `rules.default.json`으로 ZIP에 함께 넣어 두고, 시작할 때 첫 줄의 기본 규칙 지문이 다르면 `rules.json`을 바꿈. 직접 고친 흔적이 있으면 `rules.json.bak`으로 백업하고, 쓰지 못하면 그 실행은 `rules.default.json`의 규칙을 씀. DLL에 내장하지 않는 이유: 큰 텍스트가 든 서명 없는 DLL이 Windows 보안의 머신러닝 오탐(`Trojan:Script/…!ml`)을 불렀음(v0.4.0) | `src/Core/RuleUpdate.cs`, `src/Plugin/RuleFiles.cs` |
-| NameTable | 이름 ↔ ID 변환 | `src/Core/NameTable.cs` |
+| NameTable | 이름 ↔ ID 변환. 지금 게임의 `names.json`에 없는 이름은 동봉한 한국어 참조표 `rules/names.ko.json`(배포 시 `names.ko.json`)에서 같은 ID로 찾음 | `src/Core/NameTable.cs` |
 | BadgeView | 배지·툴팁 표시와 제거, 선택한 칩 판정 | `src/Plugin/View/BadgeView.cs` |
 | KeywordPanel / CoreStrip | 키워드·가중치 패널, 코어 칩 아이콘 줄 | `src/Plugin/View/KeywordPanel.cs`, `CoreStrip.cs` |
 | ReleaseCheck / Updater | 게임 시작 때 게임 밖 새 버전 확인 프로그램 실행 (아래 "릴리스 알림") | `src/Plugin/ReleaseCheck.cs`, `src/Updater/` |

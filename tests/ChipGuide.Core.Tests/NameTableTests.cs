@@ -55,6 +55,18 @@ public class NameTableTests
     }
 
     [Fact]
+    public void 지금_게임에_없는_이름은_참조표에서_같은_id로_찾는다()
+    {
+        var english = NameTable.Parse("""{ "version": 1, "chips": [ { "id": 300, "name": "Utility Knife - Sharp", "base": "Utility Knife", "grade": "purple" } ], "heroes": [ { "id": 1, "name": "Papara" } ] }""");
+        var names = english.WithFallback(NameTable.Parse(Sample));
+
+        Assert.Equal(new[] { 300, 301 }, names.Chip("커터칼")!.OrderBy(i => i));
+        Assert.Equal(new[] { 300 }, names.Chip("Utility Knife")!);
+        Assert.Equal(new[] { 1 }, names.Hero("파파라")!);
+        Assert.Null(names.Chip("가뱡"));
+    }
+
+    [Fact]
     public void 등급을_기록한다()
     {
         var names = NameTable.Parse(Sample);

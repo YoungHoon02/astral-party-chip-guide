@@ -20,6 +20,27 @@ public class RuleSourceTests
     }
 
     [Fact]
+    public void 다른_언어의_names_json이어도_참조표로_규칙을_찾는다()
+    {
+        const string english = """{ "version": 1, "chips": [ { "id": 200, "name": "Hand Fan", "base": "Hand Fan", "grade": "blue" } ], "heroes": [ { "id": 3, "name": "Mimi" } ] }""";
+        var source = new RuleSource(() => english, () => Rules, _log.Add, () => NameTableTests.Sample);
+
+        Assert.True(source.Reload());
+        Assert.Single(source.Current.Rules);
+        Assert.Contains(_log, line => line.Contains("오류 0건"));
+    }
+
+    [Fact]
+    public void 참조표가_깨져도_names_json으로_계속_읽는다()
+    {
+        var source = new RuleSource(() => NameTableTests.Sample, () => Rules, _log.Add, () => "{ broken");
+
+        Assert.True(source.Reload());
+        Assert.Single(source.Current.Rules);
+        Assert.Contains(_log, line => line.Contains("참조표를 읽지 못했습니다"));
+    }
+
+    [Fact]
     public void 깨진_파일이면_이전_규칙을_유지한다()
     {
         var text = Rules;

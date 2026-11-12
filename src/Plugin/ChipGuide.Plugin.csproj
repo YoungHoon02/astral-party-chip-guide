@@ -30,5 +30,6 @@
   <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true'">
     <Copy SourceFiles="$(TargetPath);$(TargetDir)ChipGuide.Core.dll" DestinationFolder="$(PluginDeployDir)" />
     <Copy SourceFiles="$(MSBuildProjectDirectory)\..\..\rules\rules.json" DestinationFiles="$(PluginDeployDir)\rules.default.json" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\..\..\rules\names.ko.json" DestinationFolder="$(PluginDeployDir)" />
   </Target>
 </Project>
