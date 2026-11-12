@@ -90,7 +90,10 @@
     {"id": 50090, "name": "영구 기관", "base": "영구 기관", "grade": "orange", "keyword": 4},
     {"id": 50091, "name": "레일건", "base": "레일건", "grade": "orange", "keyword": 4},
     {"id": 50092, "name": "돋보기", "base": "돋보기", "grade": "purple", "keyword": 0},
-    {"id": 50093, "name": "한나 인형", "base": "한나 인형", "grade": "orange", "keyword": 0}
+    {"id": 50093, "name": "한나 인형", "base": "한나 인형", "grade": "orange", "keyword": 0},
+    {"id": 50094, "name": "채집 바구니", "base": "채집 바구니", "grade": "blue", "keyword": 0},
+    {"id": 50095, "name": "요정의 날개", "base": "요정의 날개", "grade": "purple", "keyword": 0},
+    {"id": 50096, "name": "완벽한 나뭇가지", "base": "완벽한 나뭇가지", "grade": "orange", "keyword": 0}
   ],
   "heroes": [
     {"id": 101, "name": "파루난"},
@@ -127,7 +130,8 @@
     {"id": 303, "name": "질 스팅레이"},
     {"id": 304, "name": "도로시 헤이즈"},
     {"id": 305, "name": "토노 한나"},
-    {"id": 306, "name": "타치바나 셰리"}
+    {"id": 306, "name": "타치바나 셰리"},
+    {"id": 130, "name": "소우리"}
   ],
   "maps": [
     {"id": 81003, "name": "유원지"},

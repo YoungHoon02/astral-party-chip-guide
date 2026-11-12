@@ -36,6 +36,29 @@ public class ShippedRulesTests
     public void 기본_규칙_파일은_오류_없이_읽힌다() => Assert.Empty(Load.Errors);
 
     [Fact]
+    public void 영어_게임에서도_동봉한_참조표로_모든_규칙을_읽는다()
+    {
+        var english = NameTable.Parse(File.ReadAllText(Path.Combine(Root, "tests", "ChipGuide.Core.Tests", "Fixtures", "names.en.json")));
+        var reference = NameTable.Parse(File.ReadAllText(Path.Combine(Root, "rules", "names.ko.json")));
+
+        var load = RuleBook.Load(File.ReadAllText(RulesPath), english.WithFallback(reference));
+
+        Assert.Empty(load.Errors);
+        Assert.Equal(Load.Rules.Rules.Count, load.Rules.Rules.Count);
+    }
+
+    [Fact]
+    public void 참조표는_한국어_픽스처와_이름이_같다()
+    {
+        var reference = NameTable.Parse(File.ReadAllText(Path.Combine(Root, "rules", "names.ko.json")));
+
+        var load = RuleBook.Load(File.ReadAllText(RulesPath), reference);
+
+        Assert.Empty(load.Errors);
+        Assert.Equal(Load.Rules.Rules.Count, load.Rules.Rules.Count);
+    }
+
+    [Fact]
     public void 모든_캐릭터는_코어가_넷_이상이고_코어_키워드는_두_종류를_넘지_않는다()
     {
         using var document = JsonDocument.Parse(NamesJson);
@@ -111,6 +134,25 @@ public class ShippedRulesTests
     [InlineData("펭", "타겟 보드", Grade.Blue, "", Verdict.Good)]
     [InlineData("펭", "천공위성", Grade.Orange, "map:워터 타운", null)]
     [InlineData("미미", "천공위성", Grade.Orange, "map:워터 타운", Verdict.Good)]
+    [InlineData("알라나", "커터칼", Grade.Purple, "owned:아드레날린;map:영혼 축제", Verdict.Avoid)]
+    [InlineData("파파라", "커터칼", Grade.Purple, "owned:아드레날린;map:영혼 축제", Verdict.Core)]
+    [InlineData("최고귀염뽀짝천사", "슈팅 스타", Grade.Purple, "map:마법 학교", Verdict.Avoid)]
+    [InlineData("최고귀염뽀짝천사", "슈팅 스타", Grade.Orange, "map:유령 골목", Verdict.Avoid)]
+    [InlineData("소우리", "완충 방패", Grade.Blue, "", Verdict.Core)]
+    [InlineData("소우리", "복싱 글러브", Grade.Blue, "", Verdict.Core)]
+    [InlineData("소우리", "아드레날린", Grade.Orange, "", Verdict.Avoid)]
+    [InlineData("소우리", "잉어 인형", Grade.Purple, "map:용궁 유원지", Verdict.Core)]
+    [InlineData("소우리", "완벽한 나뭇가지", Grade.Orange, "map:가을 환상 숲", Verdict.Avoid)]
+    [InlineData("알라나", "커터칼", Grade.Purple, "ally:소우리", Verdict.Good)]
+    [InlineData("알라나", "아드레날린", Grade.Orange, "ally:소우리", Verdict.Good)]
+    [InlineData("알라나", "완벽한 나뭇가지", Grade.Orange, "map:가을 환상 숲", Verdict.Core)]
+    [InlineData("자스민", "완벽한 나뭇가지", Grade.Orange, "map:가을 환상 숲", Verdict.Good)]
+    [InlineData("코마치", "완벽한 나뭇가지", Grade.Orange, "map:가을 환상 숲", Verdict.Avoid)]
+    [InlineData("미미", "완벽한 나뭇가지", Grade.Orange, "map:가을 환상 숲", null)]
+    [InlineData("미미", "채집 바구니", Grade.Blue, "map:가을 환상 숲", Verdict.Good)]
+    [InlineData("루카", "요정의 날개", Grade.Purple, "map:가을 환상 숲", Verdict.Good)]
+    [InlineData("알라나", "커터칼", Grade.Purple, "map:가을 환상 숲", Verdict.Good)]
+    [InlineData("알라나", "커터칼", Grade.Purple, "owned:아드레날린;map:가을 환상 숲", Verdict.Avoid)]
     public void 상황별_판정(string hero, string chip, Grade grade, string when, Verdict? expected)
     {
         var id = Names.Chip(chip)!.Single(i => Names.ChipGrades[i] == grade);
