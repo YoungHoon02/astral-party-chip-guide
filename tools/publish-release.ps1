@@ -82,21 +82,27 @@ if ($IndexOnly) {
     return
 }
 
+# 베타는 main과 따로 beta 브랜치에서 낸다. main이 정식판 그대로 남아야 베타 중에도 긴급 수정을 깨끗하게 낼 수 있다.
 $branch = (& git -C $root rev-parse --abbrev-ref HEAD).Trim()
-if ($branch -ne 'main') { throw "main이 아닙니다: $branch" }
+if ($branch -eq 'beta') {
+    if (-not $Prerelease) { throw 'beta 브랜치에서는 -Prerelease로만 게시합니다. 정식판은 beta를 main에 머지한 뒤 main에서 내세요.' }
+}
+elseif ($branch -ne 'main') { throw "main이나 beta가 아닙니다: $branch" }
+# 정식판 번호에 꼬리표가 붙으면 인덱스가 확인 프로그램이 읽지 못하는 버전을 가리켜 모든 이용자의 알림이 멈춘다.
+if (-not $Prerelease -and $version.Contains('-')) { throw "정식판 버전에 꼬리표가 있습니다: $version" }
 if (& git -C $root status --porcelain) { throw '커밋되지 않은 변경이 있습니다.' }
 
-& git -C $root fetch --quiet --tags origin main
+& git -C $root fetch --quiet --tags origin $branch
 if ($LASTEXITCODE -ne 0) { throw 'origin에서 가져오지 못했습니다.' }
 if (& git -C $root tag --list $tag) { throw "이미 있는 태그입니다: $tag" }
 
-# 태그와 ZIP은 원격 main에 없는 커밋을 가리키면 안 된다. 받은 사람이 소스를
+# 태그와 ZIP은 원격 브랜치에 없는 커밋을 가리키면 안 된다. 받은 사람이 소스를
 # 대조할 수 없는 릴리스가 된다.
 $head = (& git -C $root rev-parse HEAD).Trim()
-$remote = (& git -C $root rev-parse origin/main).Trim()
+$remote = (& git -C $root rev-parse "origin/$branch").Trim()
 if ($head -ne $remote) {
-    & git -C $root log --oneline "origin/main..HEAD"
-    throw "origin/main과 다릅니다. 먼저 밀어 주세요: git push origin main"
+    & git -C $root log --oneline "origin/$branch..HEAD"
+    throw "origin/$branch 과 다릅니다. 먼저 밀어 주세요: git push origin $branch"
 }
 
 # 릴리스 본문은 README의 버전 섹션이 원본이다. 커밋 메시지(개발자 관점)와
@@ -143,7 +149,7 @@ if ($LASTEXITCODE -ne 0) {
 
 $ghArgs = @('release', 'create', $tag, $zip,
     '--title', $tag, '--notes-file', $notesFile,
-    '--target', 'main', '--repo', $repo)
+    '--target', $branch, '--repo', $repo)
 if ($Prerelease) { $ghArgs += '--prerelease' }
 if ($Draft) { $ghArgs += '--draft' }
 & gh @ghArgs

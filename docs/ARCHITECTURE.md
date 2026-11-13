@@ -82,7 +82,16 @@ publish-release.ps1 ─ 게시된 ZIP을 받아 sha256·크기 측정 ─> distr
 
 1. `src/Plugin/ChipGuide.Plugin.csproj`의 `<Version>`과 `Plugin.cs`의 `Version`을 함께 올립니다. 다르면 스크립트가 멈춥니다.
 2. `README.md`에 `## v<버전>` 섹션을 사용자 관점으로 적습니다. 릴리스 본문이 여기서 나옵니다.
-3. `main`을 `origin`에 민 뒤 `tools\publish-release.ps1`을 실행합니다. `tools\package.ps1`로 `dist\AstralPartyChipGuide-v<버전>.zip`을 만들고(확인 프로그램은 플러그인 버전으로 빌드, 같은 이름의 ZIP이 있으면 멈춤), 태그 `v<버전>`과 GitHub 릴리스를 만든 뒤 인덱스를 `distribution`에 올립니다. 인덱스만 실패했으면 `-IndexOnly`로 다시 올립니다.
+3. `main`을 `origin`에 민 뒤 `tools\publish-release.ps1`을 실행합니다(베타는 아래 절). `tools\package.ps1`로 `dist\AstralPartyChipGuide-v<버전>.zip`을 만들고(확인 프로그램은 플러그인 버전으로 빌드, 같은 이름의 ZIP이 있으면 멈춤), 태그 `v<버전>`과 GitHub 릴리스를 만든 뒤 인덱스를 `distribution`에 올립니다. 인덱스만 실패했으면 `-IndexOnly`로 다시 올립니다.
+
+#### 베타(사전 공개판)
+
+베타는 main이 아니라 **`beta` 브랜치**에서 냅니다. main이 정식판 그대로 남아야 베타 중에도 긴급 수정(0.5.1 등)을 베타 기능 없이 낼 수 있고, 저장소 첫 화면 README에 베타 노트가 보이지 않습니다.
+
+1. `beta`에서 버전을 `0.6.0-beta.N`으로 올리고 README에 `## v0.6.0-beta.N` 섹션을 씁니다.
+2. `beta`를 `origin`에 민 뒤 `tools\publish-release.ps1 -Prerelease`를 실행합니다. 스크립트는 `beta`에서 `-Prerelease` 없이 게시하려 하면 멈추고, 로컬 `beta`가 `origin/beta`와 같은지 확인합니다. 사전 릴리스라 알림 인덱스는 올리지 않습니다.
+3. main에 긴급 수정을 냈으면 main을 `beta`에 머지합니다.
+4. 정식판은 `beta`를 main에 머지하고, README에 0.5.0 이후 바뀐 점을 모은 `## v0.6.0` 섹션을 쓴 뒤 main에서 `-Prerelease` 없이 게시합니다. 베타 섹션은 지워도 됩니다(릴리스 페이지에 남음). 정식판 번호에 꼬리표(`-beta.N`)가 있으면 스크립트가 멈춥니다. 인덱스가 확인 프로그램이 읽지 못하는 버전을 가리키게 되기 때문입니다.
 
 ZIP만 만들 때는 `tools\package.ps1`만 실행합니다. 최상위 폴더 `AstralPartyChipGuide\`에 두 DLL, 확인 프로그램(`.exe`, `.exe.config`), `README.md`, `LICENSE`, 기본 규칙 `rules.default.json`이 들어갑니다. ZIP에는 `rules.json`을 넣지 않아 덮어써도 이용자가 고친 파일과 부딪히지 않고, 게임을 켤 때 플러그인이 `rules.default.json`을 보고 교체합니다.
 
