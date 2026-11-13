@@ -4,13 +4,13 @@ using UnityEngine;
 
 namespace ChipGuide.Plugin.View;
 
-internal sealed record CoreChip(ChipIcon Chip, bool Owned);
+internal sealed record CoreChip(ChipIcon Chip, bool Owned, IReadOnlyList<char> Builds);
 
 // 내 캐릭터의 코어 칩을 확인 버튼 아래에 늘어놓고, 가진 칩만 컬러로 보여 빌드 진행 상황을 한눈에 보이게 한다.
 internal static class CoreStrip
 {
     private static readonly Color Background = new(0.02f, 0.02f, 0.03f, 0.9f), TipFill = new(0.04f, 0.05f, 0.07f, 0.92f), Glow = new(1f, 0.6f, 0.1f, 1f);
-    private const float BlinkPeriod = 1.6f, GlowMin = 0.15f, GlowMax = 0.85f;
+    private const float BlinkPeriod = 1.6f, GlowMin = 0.15f, GlowMax = 0.85f, TagScale = 0.35f;
 
     private sealed record Slot(RuntimeObject Icon, RuntimeObject Glow, string Name);
 
@@ -54,6 +54,7 @@ internal static class CoreStrip
                 icon.Call("SetXY", x, padding);
                 strip.Call("AddChild", icon);
                 Icons.Add(new Slot(icon, glow, chip.Chip.Name));
+                AddBuildTags(strip, chip, x + iconSize, padding + iconSize, iconSize * TagScale);
                 x += iconSize + padding;
             }
             var width = x + padding * 0.5f;
@@ -125,6 +126,24 @@ internal static class CoreStrip
         var global = button.Call("LocalToGlobal", new Vector2(button.Get<float>("width") / 2, button.Get<float>("height")))!.Value<Vector2>();
         var anchor = parent.Call("GlobalToLocal", global)!.Value<Vector2>();
         _strip.Call("SetXY", anchor.x - _strip.Get<float>("width") / 2, anchor.y + _gap);
+    }
+
+    // 블럭은 줄의 자식이라 줄을 정리할 때 함께 사라진다. 블럭을 못 그려도 아이콘 줄은 남긴다. 글자 크기는 카드 배지 아래 블럭과 같은 비율(한 변 = 글자 × 1.6)이다.
+    private static void AddBuildTags(RuntimeObject strip, CoreChip chip, float right, float bottom, float size)
+    {
+        try
+        {
+            for (var i = 0; i < chip.Builds.Count; i++)
+            {
+                var tag = BuildTag.Create(chip.Builds[i], size, (int)Math.Round(size / 1.6f));
+                strip.Call("AddChild", tag);
+                tag.Call("SetXY", right - size * (i + 1), bottom - size);
+            }
+        }
+        catch (Exception ex)
+        {
+            Plugin.Logger.LogWarning($"코어 칩 줄의 빌드 글자({chip.Chip.Name})를 그리지 못했습니다: {ex.Message}");
+        }
     }
 
     private static int TopSortingOrder(RuntimeObject host)

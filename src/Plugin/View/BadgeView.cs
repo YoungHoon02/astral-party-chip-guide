@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ChipGuide.Plugin.View;
 
-internal sealed record CardView(RuntimeObject Item, string Name, Advice? Advice, string? Warning, IReadOnlySet<Keyword> WouldLock, ChipRole Role, Keyword Keyword, KeywordState KeywordState);
+internal sealed record CardView(RuntimeObject Item, string Name, Advice? Advice, string? Warning, IReadOnlySet<Keyword> WouldLock, ChipRole Role, Keyword Keyword, KeywordState KeywordState, string? BuildLine);
 
 internal static class BadgeView
 {
@@ -17,12 +17,13 @@ internal static class BadgeView
     private const int SelectedStatus = 1;
     private static readonly Color WarningFill = new(0.93f, 0.55f, 0.13f, 0.95f), WarningInk = new(0.1f, 0.1f, 0.1f, 1f);
 
-    private sealed record Badge(RuntimeObject Item, RuntimeObject Pill, RuntimeObject Label, Vector2 PillSize);
+    private sealed record Badge(RuntimeObject Item, RuntimeObject Host, RuntimeObject Pill, RuntimeObject Label, Vector2 Origin, Vector2 PillSize, int TextSize);
 
     private sealed record Tooltip(RuntimeObject Panel, IntPtr For, Vector2 Size);
 
     private static readonly List<Badge> Badges = new();
     private static readonly List<RuntimeObject> RoleTags = new();
+    private static readonly List<RuntimeObject> BuildTags = new();
     private static IReadOnlyList<CardView> _cards = Array.Empty<CardView>();
     private static readonly Color RoleTagFill = new(0.04f, 0.05f, 0.07f, 0.8f), RoleTagInk = new(0.85f, 0.9f, 1f, 1f);
     private static RuntimeObject? _container;
@@ -30,7 +31,7 @@ internal static class BadgeView
     private static Tooltip? _tooltip;
     private static readonly IReadOnlySet<Keyword> NoKeywords = new HashSet<Keyword>();
 
-    internal static bool Showing => Badges.Count > 0 || RoleTags.Count > 0 || KeywordPanel.Alive || CoreStrip.Alive;
+    internal static bool Showing => Badges.Count > 0 || RoleTags.Count > 0 || BuildTags.Count > 0 || KeywordPanel.Alive || CoreStrip.Alive;
 
     internal static void Show(RuntimeObject container, IReadOnlyList<CardView> cards, IReadOnlyList<KeywordRow>? keywords, IReadOnlyList<CoreChip>? core, RoleWeights? weights, bool roleTags)
     {
@@ -42,7 +43,11 @@ internal static class BadgeView
         foreach (var card in cards)
         {
             var badge = card.Advice != null || card.Warning != null ? CreateBadge(card.Item, card.Advice, card.Warning) : null;
-            if (badge != null) Badges.Add(badge);
+            if (badge != null)
+            {
+                Badges.Add(badge);
+                if (card.Advice?.Builds is { Count: > 0 } letters) AddBuildTags(badge, letters);
+            }
             if (roleTags && card.Role.Label() is { Length: > 0 } label && CreateRoleTag(card.Item, label, badge?.PillSize.y) is { } tag) RoleTags.Add(tag);
         }
         if (cards.Count > 0)
@@ -120,12 +125,13 @@ internal static class BadgeView
         }
         finally
         {
-            foreach (var tag in RoleTags)
+            foreach (var tag in RoleTags.Concat(BuildTags))
             {
                 try { GameUi.Dispose(tag); } catch { failed = true; }
             }
             Badges.Clear();
             RoleTags.Clear();
+            BuildTags.Clear();
             _cards = Array.Empty<CardView>();
             _container = null;
             if (failed) Plugin.Logger.LogWarning("일부 배지를 정리하지 못했습니다.");
@@ -243,13 +249,36 @@ internal static class BadgeView
             host.Call("AddChild", pill);
             label.Call("SetXY", origin.x + (size.x - label.Get<float>("width")) / 2, origin.y + (size.y - label.Get<float>("height")) / 2);
             host.Call("AddChild", label);
-            return new Badge(item, pill, label, size);
+            return new Badge(item, host, pill, label, origin, size, textSize);
         }
         catch
         {
             GameUi.Dispose(label);
             GameUi.Dispose(pill);
             throw;
+        }
+    }
+
+    // 블럭이 칩 설명 글자를 덮지 않도록, 세로로 쌓아 아이콘 아래로 넘치면 배지 아래에서 왼쪽으로 늘어놓는다. 아이콘을 못 찾아 카드에 붙였으면 잴 기준이 없어 세로로 둔다.
+    private static void AddBuildTags(Badge badge, IReadOnlyList<char> letters)
+    {
+        try
+        {
+            var size = badge.PillSize.y;
+            var right = badge.Origin.x + badge.PillSize.x;
+            var top = badge.Origin.y + size;
+            var vertical = badge.Host.Pointer == badge.Item.Pointer || top + size * letters.Count <= badge.Host.Get<float>("height");
+            for (var i = 0; i < letters.Count; i++)
+            {
+                var tag = BuildTag.Create(letters[i], size, badge.TextSize);
+                BuildTags.Add(tag);
+                tag.Call("SetXY", vertical ? right - size : right - size * (i + 1), vertical ? top + size * i : top);
+                badge.Host.Call("AddChild", tag);
+            }
+        }
+        catch (Exception ex)
+        {
+            Plugin.Logger.LogWarning($"빌드 글자 블럭을 그리지 못했습니다: {ex.Message}");
         }
     }
 
@@ -277,6 +306,7 @@ internal static class BadgeView
     private static List<string> TooltipLines(CardView card)
     {
         var lines = new List<string>();
+        if (card.BuildLine != null) lines.Add(card.BuildLine);
         if (card.Advice is { } advice)
         {
             // 이긴 판정은 배지에 이미 보이므로 기호를 붙이지 않는다. 참고 줄은 판정이 배지와 다를 수 있어 기호를 남긴다.

@@ -140,6 +140,7 @@ internal static class Guide
             ? KeywordLock.Keywords.Select(k => new KeywordRow(k, KeywordLock.State(owned, k), ownedKeywords.Count(o => o == k), GameTables.KeywordChips(k, situation.MapId))).ToList()
             : null;
         var coreChips = Plugin.CoreStrip.Value ? CoreChips(situation) : null;
+        var builds = ChipAdvisor.Builds(_rules.Current, situation);
         var roles = screen.Cards.Select(card => GameTables.ChipRoleOf(card.RelicId)).ToList();
         var showRoles = Plugin.ShowRoleWeights.Value;
         var weights = showRoles && GameTables.HeroWeights(situation.HeroId) is { } baseWeights
@@ -147,28 +148,45 @@ internal static class Guide
             : null;
         BadgeView.Show(screen.Container,
             screen.Cards.Select((card, i) => new CardView(card.Item, GameTables.ChipName(card.RelicId), advice[i], warnings[i], warn ? KeywordLock.WouldLock(owned, infos[i].Keyword) : NoKeywords, roles[i],
-                infos[i].Keyword, KeywordLock.State(owned, infos[i].Keyword))).ToList(),
+                infos[i].Keyword, KeywordLock.State(owned, infos[i].Keyword), BuildText(advice[i], builds))).ToList(),
             panel, coreChips, weights, showRoles);
         _signature = signature;
 
         if (Plugin.Diagnostics.Value)
             Plugin.Logger.LogInfo($"[진단] 캐릭터={situation.HeroId} 보유={string.Join(",", situation.OwnedRelics)} 아군={string.Join(",", situation.AllyHeroes)} 아군 칩={string.Join(",", situation.AllyRelics)} 맵={situation.MapId} "
-                + $"보유 키워드={string.Join(",", owned)} 가중치={weights?.ToString() ?? "없음"} "
+                + $"보유 키워드={string.Join(",", owned)} 가중치={weights?.ToString() ?? "없음"} 빌드={(builds == null ? "없음" : string.Join(",", builds.Select(b => b.Letter)))} "
                 + $"판정={string.Join(" / ", options.Select((o, i) => $"{o.RelicId}({o.Grade},{infos[i].Keyword})={advice[i]?.Verdict.ToString() ?? "없음"}{(warnings[i] != null ? "+키워드경고" : "")}"))}");
     }
 
-    // 등급만 다른 칩은 이름으로 합쳐, 어느 등급이든 하나 가졌으면 보유로 본다.
+    private static string? BuildText(Advice? advice, IReadOnlyList<BuildLine>? builds)
+    {
+        if (advice == null || advice.Builds.Count == 0) return null;
+        var letters = string.Join("·", advice.Builds);
+        var labels = advice.Builds.Select(letter => builds?.FirstOrDefault(build => build.Letter == letter)?.Label).OfType<string>().ToList();
+        return labels.Count == 0 ? $"코어 {letters}" : $"코어 {letters} ({string.Join("·", labels)})";
+    }
+
+    // 등급만 다른 칩은 이름으로 합쳐, 어느 등급이든 하나 가졌으면 보유로 보고 빌드 글자도 모은다.
     private static IReadOnlyList<CoreChip> CoreChips(Situation situation)
     {
         var ownedNames = situation.OwnedRelics.Select(GameTables.ChipName).ToHashSet();
-        var result = new List<CoreChip>();
-        var seen = new HashSet<string>();
-        foreach (var id in ChipAdvisor.CoreChips(_rules.Current, situation))
+        var chips = new List<ChipIcon>();
+        var letters = new Dictionary<string, SortedSet<char>>();
+        foreach (var advice in ChipAdvisor.CoreAdvice(_rules.Current, situation))
         {
-            if (GameTables.ChipIconOf(id, situation.MapId) is not { } chip || !seen.Add(chip.Name)) continue;
-            result.Add(new CoreChip(chip, ownedNames.Contains(chip.Name)));
+            if (GameTables.ChipIconOf(advice.Option.RelicId, situation.MapId) is not { } chip) continue;
+            if (!letters.TryGetValue(chip.Name, out var set))
+            {
+                letters[chip.Name] = set = new SortedSet<char>();
+                chips.Add(chip);
+            }
+            set.UnionWith(advice.Builds);
         }
-        return result;
+        // 글자 없는 공용 코어('\0')가 A·B·C보다 앞에 온다. OrderBy는 안정 정렬이라 같은 그룹 안에서는 원래 순서가 남는다.
+        return chips
+            .Select(chip => new CoreChip(chip, ownedNames.Contains(chip.Name), letters[chip.Name].ToList()))
+            .OrderBy(chip => chip.Builds.FirstOrDefault())
+            .ToList();
     }
 
     private static void Hide()
