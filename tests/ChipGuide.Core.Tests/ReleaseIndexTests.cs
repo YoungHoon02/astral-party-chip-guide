@@ -35,4 +35,22 @@ public class ReleaseIndexTests
     public void U5_해시_형식이_틀리면_무시한다() =>
         Assert.Equal("bad package digest",
             Assert.Throws<InvalidDataException>(() => ReleaseIndex.Newer(Index("0.2.0", sha: "zz"), Running)).Message);
+
+    [Fact]
+    public void U6_베타_설치본은_같은_번호의_정식판을_알린다()
+    {
+        Assert.Equal("0.1.0", ReleaseIndex.Newer(Index("0.1.0"), Running, prerelease: true));
+        Assert.Null(ReleaseIndex.Newer(Index("0.0.9"), Running, prerelease: true));
+    }
+
+    [Theory]
+    [InlineData("0.1.0-beta.1+1f1000b", "0.1.0-beta.1")]
+    [InlineData("0.1.0-rc.2", "0.1.0-rc.2")]
+    [InlineData("0.1.0+1f1000b", null)]
+    [InlineData("0.1.0", null)]
+    [InlineData("0.2.0-beta.1", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void U7_제품_버전에서_베타_꼬리표를_읽는다(string? product, string? expected) =>
+        Assert.Equal(expected, ReleaseIndex.Prerelease(product, Running));
 }

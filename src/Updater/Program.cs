@@ -31,13 +31,13 @@ internal static class Program
         Application.SetCompatibleTextRenderingDefault(false);
 
         string dir = AppDomain.CurrentDomain.BaseDirectory;
-        Version current = InstalledVersion(dir);
-        string shown = ReleaseIndex.Normalize(current).ToString();
+        (Version current, string? prerelease) = InstalledVersion(dir);
+        string shown = prerelease ?? ReleaseIndex.Normalize(current).ToString();
 
         string? latest;
         try
         {
-            latest = ReleaseIndex.Newer(Fetch(shown), current);
+            latest = ReleaseIndex.Newer(Fetch(shown), current, prerelease != null);
         }
         catch (Exception e)
         {
@@ -70,15 +70,19 @@ internal static class Program
     }
 
     // 플러그인 DLL의 버전이 기준이다. 확인 도구만 따로 남은 설치에서도 실제 설치본과 비교하게 한다.
-    private static Version InstalledVersion(string dir)
+    private static (Version Number, string? Prerelease) InstalledVersion(string dir)
     {
+        string path = Path.Combine(dir, PluginDll);
         try
         {
-            return AssemblyName.GetAssemblyName(Path.Combine(dir, PluginDll)).Version;
+            Version number = AssemblyName.GetAssemblyName(path).Version;
+            return (number, ReleaseIndex.Prerelease(FileVersionInfo.GetVersionInfo(path).ProductVersion, number));
         }
         catch
         {
-            return Assembly.GetExecutingAssembly().GetName().Version;
+            Assembly self = Assembly.GetExecutingAssembly();
+            Version number = self.GetName().Version;
+            return (number, ReleaseIndex.Prerelease(FileVersionInfo.GetVersionInfo(self.Location).ProductVersion, number));
         }
     }
 

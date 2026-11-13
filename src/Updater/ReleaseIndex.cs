@@ -26,7 +26,8 @@ internal static class ReleaseIndex
     }
 
     // 더 새 버전이면 그 버전 문자열, 아니면 null. 인덱스가 어긋나면 예외 — 엉뚱한 알림보다 침묵이 낫다.
-    public static string? Newer(byte[] json, Version current)
+    // 베타 설치본은 같은 번호의 정식판보다 앞이라 번호가 같아도 알린다. 인덱스에는 사전 릴리스가 오르지 않는다.
+    public static string? Newer(byte[] json, Version current, bool prerelease = false)
     {
         Index index;
         try
@@ -48,7 +49,19 @@ internal static class ReleaseIndex
         if (index.DownloadUrl != expected) throw new InvalidDataException("unexpected download url");
         if (!IsSha256(index.Sha256) || index.Size <= 0) throw new InvalidDataException("bad package digest");
 
-        return Normalize(latest!) > Normalize(current) ? version : null;
+        int order = Normalize(latest!).CompareTo(Normalize(current));
+        return order > 0 || (order == 0 && prerelease) ? version : null;
+    }
+
+    // 어셈블리 버전에는 베타 꼬리표가 남지 않아 0.6.0-beta.1이 0.6.0.0이 된다.
+    // 빌드가 제품 버전에 넣는 원래 문자열(0.6.0-beta.1+커밋)에서 꼬리표를 찾고, 번호가 어셈블리 버전과 다르면 믿지 않는다.
+    public static string? Prerelease(string? productVersion, Version current)
+    {
+        if (string.IsNullOrEmpty(productVersion)) return null;
+        int plus = productVersion!.IndexOf('+');
+        string text = plus < 0 ? productVersion : productVersion.Substring(0, plus);
+        int dash = text.IndexOf('-');
+        return dash > 0 && text.Substring(0, dash) == Normalize(current).ToString() ? text : null;
     }
 
     // 어셈블리 버전은 0.1.0.0이고 인덱스는 0.1.0라, 네 번째 자리를 버리고 비교한다.
