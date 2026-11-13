@@ -294,4 +294,90 @@ public class RuleBookTests
     [Fact]
     public void BOM이_붙어도_읽는다() =>
         Assert.Empty(RuleBook.Load("\uFEFF{ \"version\": 1 }", Names).Errors);
+
+    private const string BuildJson = """
+    {
+      "version": 1,
+      "characters": {
+        "파파라": {
+          "role": "dealer",
+          "builds": {
+            "A": { "label": "아드 반격", "core": ["아드레날린"], "avoid": [{ "chip": "손풍기", "why": "A 보류" }] },
+            "B": { "label": "힐 탱커", "core": ["커터칼"], "why": { "커터칼": "B 코어 이유" } }
+          }
+        }
+      }
+    }
+    """;
+
+    [Fact]
+    public void 빌드를_읽어_빌드_정보와_규칙을_만든다()
+    {
+        var load = RuleBook.Load(BuildJson, Names);
+
+        Assert.Empty(load.Errors);
+        var builds = load.Rules.BuildsOf(1);
+        Assert.Equal(new[] { 'A', 'B' }, builds.Select(b => b.Letter));
+        Assert.Equal(new[] { "아드 반격", "힐 탱커" }, builds.Select(b => b.Label));
+        Assert.Equal(new[] { 300, 301 }, builds[1].Core.OrderBy(i => i));
+        var adrenaline = Assert.Single(load.Rules.Rules, r => r.RelicIds.Contains(100));
+        Assert.Equal(((char?)'A', Verdict.Core, 2, "파파라 코어 A"), (adrenaline.Build, adrenaline.Verdict, adrenaline.Specificity, adrenaline.Why));
+        Assert.Equal("B 코어 이유", Assert.Single(load.Rules.Rules, r => r.RelicIds.Contains(300)).Why);
+        Assert.Empty(load.Rules.BuildsOf(4));
+    }
+
+    [Fact]
+    public void 빌드_무난과_보류는_그_빌드를_골랐을_때만_걸린다()
+    {
+        Assert.Null(Judge(BuildJson, At(1), 200, Grade.Purple));
+        var chosen = Judge(BuildJson, At(1, owned: new[] { 100 }), 200, Grade.Purple)!;
+        Assert.Equal((Verdict.Avoid, "A 보류"), (chosen.Verdict, chosen.Reason));
+    }
+
+    [Theory]
+    [InlineData("""{ "A": { "label": "가", "core": ["아드레날린"] }, "B": { "label": "나", "core": ["커터칼"] }, "D": { "label": "다", "core": ["손풍기"] } }""", "characters.파파라.builds.D", "A, B, C 중 하나")]
+    [InlineData("""{ "A": { "label": "가", "core": ["아드레날린"] }, "B": { "label": "나", "core": ["커터칼"] }, "C": { "core": ["손풍기"] } }""", "characters.파파라.builds.C.label", "빌드 설명이 필요")]
+    [InlineData("""{ "A": { "label": "가", "core": ["아드레날린"] }, "B": { "label": "나", "core": ["커터칼"] }, "C": { "label": "열한글자짜리빌드설명임", "core": ["손풍기"] } }""", "characters.파파라.builds.C.label", "10자 이하")]
+    [InlineData("""{ "A": { "label": "가", "core": ["아드레날린"] }, "B": { "label": "나", "core": ["커터칼"] }, "C": { "label": "다", "core": [] } }""", "characters.파파라.builds.C.core", "하나 이상")]
+    [InlineData("""{ "A": { "label": "가", "core": ["아드레날린"] }, "B": { "label": "나", "core": ["커터칼"] }, "C": { "label": "다", "core": ["없는칩"] } }""", "characters.파파라.builds.C.core[0]", "없는칩")]
+    public void 잘못된_빌드는_오류를_남기고_뺀다(string builds, string path, string message)
+    {
+        var json = $$"""{ "version": 1, "characters": { "파파라": { "role": "dealer", "builds": {{builds}} } } }""";
+
+        var load = RuleBook.Load(json, Names);
+
+        Assert.Contains(load.Errors, e => e.Contains(path) && e.Contains(message));
+        Assert.Equal(new[] { 'A', 'B' }, load.Rules.BuildsOf(1).Select(b => b.Letter));
+        Assert.DoesNotContain(load.Rules.Rules, r => r.RelicIds.Contains(200));
+    }
+
+    [Fact]
+    public void 공용_코어와_겹치는_빌드_코어는_빌드에서_뺀다()
+    {
+        const string json = """
+        { "version": 1, "characters": { "파파라": { "role": "dealer", "core": ["손풍기"],
+          "builds": { "A": { "label": "가", "core": ["아드레날린", "손풍기"] }, "B": { "label": "나", "core": ["커터칼"] } } } } }
+        """;
+
+        var load = RuleBook.Load(json, Names);
+
+        Assert.Contains(load.Errors, e => e.Contains("characters.파파라.builds.A.core[1]") && e.Contains("공용 코어"));
+        Assert.Equal(new[] { 100 }, load.Rules.BuildsOf(1)[0].Core);
+        Assert.DoesNotContain(load.Rules.Rules, r => r.Build == 'A' && r.RelicIds.Contains(200));
+    }
+
+    [Fact]
+    public void 빌드가_하나만_남으면_builds_전체를_무시한다()
+    {
+        const string json = """
+        { "version": 1, "characters": { "파파라": { "role": "dealer",
+          "builds": { "A": { "label": "가", "core": ["아드레날린"] }, "B": { "label": "나", "core": [] } } } } }
+        """;
+
+        var load = RuleBook.Load(json, Names);
+
+        Assert.Contains(load.Errors, e => e.Contains("characters.파파라.builds") && e.Contains("둘 이상"));
+        Assert.Empty(load.Rules.BuildsOf(1));
+        Assert.DoesNotContain(load.Rules.Rules, r => r.Build is not null);
+    }
 }

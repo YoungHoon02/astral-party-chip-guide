@@ -17,7 +17,7 @@ public static class RuleBook
         if (root.TryGetProperty("roles", out var roles)) builder.ReadRoles(roles);
         if (root.TryGetProperty("characters", out var characters)) builder.ReadCharacters(characters);
         if (root.TryGetProperty("rules", out var rules)) builder.ReadRules(rules);
-        return new RuleLoad(new RuleSet(builder.Rules, builder.Roles), builder.Errors);
+        return new RuleLoad(new RuleSet(builder.Rules, builder.Roles, builder.Builds), builder.Errors);
     }
 
     private sealed class Builder
@@ -28,6 +28,7 @@ public static class RuleBook
         private readonly NameTable _names;
         public readonly List<ChipRule> Rules = new();
         public readonly Dictionary<int, Role> Roles = new();
+        public readonly Dictionary<int, IReadOnlyList<BuildDef>> Builds = new();
         public readonly List<string> Errors = new();
 
         public Builder(NameTable names) => _names = names;
@@ -70,9 +71,116 @@ public static class RuleBook
                         Errors.Add($"{path}.role: dealer, support, flex, skill 중 하나여야 합니다");
                 }
                 var whyMap = body.TryGetProperty("why", out var why) ? ReadWhyMap(why, $"{path}.why") : null;
+                var firstRule = Rules.Count;
                 ReadLists(body, path, character.Name, 2, new Condition(Character: heroes), whyMap);
+                if (body.TryGetProperty("builds", out var builds))
+                {
+                    var sharedCore = new HashSet<int>();
+                    foreach (var rule in Rules.Skip(firstRule).Where(r => r.Verdict == Verdict.Core))
+                        sharedCore.UnionWith(rule.RelicIds);
+                    ReadBuilds(builds, path, character.Name, heroes, sharedCore, whyMap);
+                }
             }
         }
+
+        private void ReadBuilds(JsonElement builds, string path, string name, IReadOnlySet<int> heroes,
+            IReadOnlySet<int> sharedCore, IReadOnlyDictionary<int, string>? characterWhy)
+        {
+            path += ".builds";
+            if (!Expect(builds, JsonValueKind.Object, path)) return;
+            var defs = new List<BuildDef>();
+            var rules = new List<ChipRule>();
+            foreach (var entry in builds.EnumerateObject())
+            {
+                var buildPath = $"{path}.{entry.Name}";
+                if (entry.Name is not ("A" or "B" or "C"))
+                {
+                    Errors.Add($"{buildPath}: A, B, C 중 하나여야 합니다");
+                    continue;
+                }
+                if (ReadBuild(entry.Value, buildPath, entry.Name[0], name, heroes, sharedCore, characterWhy) is not { } read) continue;
+                defs.Add(read.Def);
+                rules.AddRange(read.Rules);
+            }
+            if (defs.Count < 2)
+            {
+                Errors.Add($"{path}: 빌드가 둘 이상 필요합니다");
+                return;
+            }
+            Rules.AddRange(rules);
+            IReadOnlyList<BuildDef> ordered = defs.OrderBy(d => d.Letter).ToList();
+            foreach (var id in heroes) Builds[id] = ordered;
+        }
+
+        private (BuildDef Def, List<ChipRule> Rules)? ReadBuild(JsonElement body, string path, char letter, string name,
+            IReadOnlySet<int> heroes, IReadOnlySet<int> sharedCore, IReadOnlyDictionary<int, string>? characterWhy)
+        {
+            if (!Expect(body, JsonValueKind.Object, path)) return null;
+            var label = TextSafety.Clean(Json.String(body, "label"));
+            if (label.Length == 0)
+            {
+                Errors.Add($"{path}.label: 빌드 설명이 필요합니다");
+                return null;
+            }
+            if (label.Length > 10)
+            {
+                Errors.Add($"{path}.label: 10자 이하여야 합니다");
+                return null;
+            }
+
+            var whyMap = new Dictionary<int, string>();
+            if (characterWhy is not null)
+                foreach (var pair in characterWhy) whyMap[pair.Key] = pair.Value;
+            if (body.TryGetProperty("why", out var why))
+                foreach (var pair in ReadWhyMap(why, $"{path}.why")) whyMap[pair.Key] = pair.Value;
+
+            var rules = new List<ChipRule>();
+            var core = new HashSet<int>();
+            void ReadList(string key, Verdict verdict, Condition condition)
+            {
+                if (!body.TryGetProperty(key, out var list) || !Expect(list, JsonValueKind.Array, $"{path}.{key}")) return;
+                var index = 0;
+                foreach (var item in list.EnumerateArray())
+                {
+                    var itemPath = $"{path}.{key}[{index++}]";
+                    if (ReadChipRef(item, itemPath) is not { } chip) continue;
+                    if (verdict == Verdict.Core && sharedCore.Overlaps(chip.Ids))
+                    {
+                        Errors.Add($"{itemPath}: '{ChipName(item)}'은(는) 공용 코어에 이미 있습니다");
+                        continue;
+                    }
+                    if (verdict == Verdict.Core) core.UnionWith(chip.Ids);
+                    var reason = chip.Why ?? FirstWhy(whyMap, chip.Ids) ?? $"{name} {BuildLabel(verdict, letter)}";
+                    rules.Add(new ChipRule(chip.Ids, verdict, TextSafety.Clean(reason), 2, condition, chip.MinGrade, letter));
+                }
+            }
+
+            if (!body.TryGetProperty("core", out _))
+            {
+                Errors.Add($"{path}.core: 칩이 하나 이상 필요합니다");
+                return null;
+            }
+            ReadList("core", Verdict.Core, new Condition(Character: heroes));
+            if (core.Count == 0)
+            {
+                Errors.Add($"{path}.core: 칩이 하나 이상 필요합니다");
+                return null;
+            }
+            var owned = new Condition(Owned: core, Character: heroes);
+            ReadList("good", Verdict.Good, owned);
+            ReadList("avoid", Verdict.Avoid, owned);
+            return (new BuildDef(letter, label, core), rules);
+        }
+
+        private static string? ChipName(JsonElement item) =>
+            item.ValueKind == JsonValueKind.String ? item.GetString() : Json.String(item, "chip");
+
+        private static string BuildLabel(Verdict verdict, char letter) => verdict switch
+        {
+            Verdict.Core => $"코어 {letter}",
+            Verdict.Good => $"빌드 {letter} 무난",
+            _ => $"빌드 {letter} 보류",
+        };
 
         public void ReadRules(JsonElement rules)
         {

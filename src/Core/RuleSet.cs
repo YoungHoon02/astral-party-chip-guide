@@ -23,9 +23,18 @@ public sealed record ChipRule(
     string Why,
     int Specificity,
     Condition When,
-    Grade? MinGrade = null);
+    Grade? MinGrade = null,
+    char? Build = null);
 
-public sealed record RuleSet(IReadOnlyList<ChipRule> Rules, IReadOnlyDictionary<int, Role> Roles)
+public sealed record BuildDef(char Letter, string Label, IReadOnlySet<int> Core);
+
+public sealed record RuleSet(
+    IReadOnlyList<ChipRule> Rules,
+    IReadOnlyDictionary<int, Role> Roles,
+    IReadOnlyDictionary<int, IReadOnlyList<BuildDef>>? Builds = null)
 {
     public static RuleSet Empty { get; } = new(Array.Empty<ChipRule>(), new Dictionary<int, Role>());
+
+    public IReadOnlyList<BuildDef> BuildsOf(int heroId) =>
+        Builds is not null && Builds.TryGetValue(heroId, out var builds) ? builds : Array.Empty<BuildDef>();
 }
