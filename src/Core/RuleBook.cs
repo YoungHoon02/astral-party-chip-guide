@@ -76,20 +76,22 @@ public static class RuleBook
                 if (body.TryGetProperty("builds", out var builds))
                 {
                     var sharedCore = new HashSet<int>();
-                    foreach (var rule in Rules.Skip(firstRule).Where(r => r.Verdict == Verdict.Core))
-                        sharedCore.UnionWith(rule.RelicIds);
-                    ReadBuilds(builds, path, character.Name, heroes, sharedCore, whyMap);
+                    var sharedListed = new HashSet<int>();
+                    foreach (var rule in Rules.Skip(firstRule))
+                        (rule.Verdict == Verdict.Core ? sharedCore : sharedListed).UnionWith(rule.RelicIds);
+                    ReadBuilds(builds, path, character.Name, heroes, sharedCore, sharedListed, whyMap);
                 }
             }
         }
 
         private void ReadBuilds(JsonElement builds, string path, string name, IReadOnlySet<int> heroes,
-            IReadOnlySet<int> sharedCore, IReadOnlyDictionary<int, string>? characterWhy)
+            IReadOnlySet<int> sharedCore, IReadOnlySet<int> sharedListed, IReadOnlyDictionary<int, string>? characterWhy)
         {
             path += ".builds";
             if (!Expect(builds, JsonValueKind.Object, path)) return;
             var defs = new List<BuildDef>();
             var rules = new List<ChipRule>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entry in builds.EnumerateObject())
             {
                 var buildPath = $"{path}.{entry.Name}";
@@ -98,7 +100,12 @@ public static class RuleBook
                     Errors.Add($"{buildPath}: A, B, C 중 하나여야 합니다");
                     continue;
                 }
-                if (ReadBuild(entry.Value, buildPath, entry.Name[0], name, heroes, sharedCore, characterWhy) is not { } read) continue;
+                if (!seen.Add(entry.Name))
+                {
+                    Errors.Add($"{buildPath}: 중복된 빌드입니다");
+                    continue;
+                }
+                if (ReadBuild(entry.Value, buildPath, entry.Name[0], name, heroes, sharedCore, sharedListed, characterWhy) is not { } read) continue;
                 defs.Add(read.Def);
                 rules.AddRange(read.Rules);
             }
@@ -113,7 +120,7 @@ public static class RuleBook
         }
 
         private (BuildDef Def, List<ChipRule> Rules)? ReadBuild(JsonElement body, string path, char letter, string name,
-            IReadOnlySet<int> heroes, IReadOnlySet<int> sharedCore, IReadOnlyDictionary<int, string>? characterWhy)
+            IReadOnlySet<int> heroes, IReadOnlySet<int> sharedCore, IReadOnlySet<int> sharedListed, IReadOnlyDictionary<int, string>? characterWhy)
         {
             if (!Expect(body, JsonValueKind.Object, path)) return null;
             var label = TextSafety.Clean(Json.String(body, "label"));
@@ -149,6 +156,8 @@ public static class RuleBook
                         Errors.Add($"{itemPath}: '{ChipName(item)}'은(는) 공용 코어에 이미 있습니다");
                         continue;
                     }
+                    if (verdict == Verdict.Core && sharedListed.Overlaps(chip.Ids))
+                        Errors.Add($"{itemPath}: '{ChipName(item)}'은(는) 캐릭터 good/avoid에도 있습니다(같은 단계라 한쪽 판정만 남습니다)");
                     if (verdict == Verdict.Core) core.UnionWith(chip.Ids);
                     var reason = chip.Why ?? FirstWhy(whyMap, chip.Ids) ?? $"{name} {BuildLabel(verdict, letter)}";
                     rules.Add(new ChipRule(chip.Ids, verdict, TextSafety.Clean(reason), 2, condition, chip.MinGrade, letter));

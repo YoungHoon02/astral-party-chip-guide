@@ -61,12 +61,19 @@ public static class ChipAdvisor
         var notes = all;
 
         // 빌드와 무관하게 코어인 칩은 닫힌 빌드 소속이어도 덮어쓰지 않아서, 빌드 규칙 없이 한 번 더 판정한다.
-        if (member.Count > 0 && member.All(closed.Contains)
-            && Resolve(Sort(hits.Where(h => h.Build == null).Select(h => h.Hit)))?.Verdict != Verdict.Core)
+        if (member.Count > 0 && member.All(closed.Contains))
         {
-            var reason = $"코어 {string.Join("·", open.Select(build => build.Letter))}를 골라 보류 ({string.Join("·", closed.Select(build => $"{build.Letter} {build.Label}"))} 빌드 칩)";
-            notes = all.Prepend(top).ToList();
-            top = (CharacterSpecificity, Verdict.Avoid, reason);
+            if (Resolve(Sort(hits.Where(h => h.Build == null).Select(h => h.Hit)))?.Verdict == Verdict.Core)
+            {
+                // 닫힌 빌드의 코어 규칙이 이유로 남으면 고르지 않은 빌드 때문에 코어인 것처럼 보여서, 닫힌 빌드 규칙만 빼고 다시 정한다.
+                top = Resolve(Sort(hits.Where(h => h.Build is not { } letter || open.Any(build => build.Letter == letter)).Select(h => h.Hit)))!.Value;
+            }
+            else
+            {
+                var reason = $"코어 {string.Join("·", open.Select(build => build.Letter))}를 골라 보류 ({string.Join("·", closed.Select(build => $"{build.Letter} {build.Label}"))} 빌드 칩)";
+                notes = all.Prepend(top).ToList();
+                top = (CharacterSpecificity, Verdict.Avoid, reason);
+            }
         }
 
         var letters = top.Verdict == Verdict.Core

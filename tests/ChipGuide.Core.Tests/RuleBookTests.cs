@@ -367,6 +367,38 @@ public class RuleBookTests
     }
 
     [Fact]
+    public void 중복된_빌드_글자는_뒤의_것을_뺀다()
+    {
+        const string json = """
+        { "version": 1, "characters": { "파파라": { "role": "dealer",
+          "builds": { "A": { "label": "가", "core": ["아드레날린"] }, "A": { "label": "다", "core": ["손풍기"] }, "B": { "label": "나", "core": ["커터칼"] } } } } }
+        """;
+
+        var load = RuleBook.Load(json, Names);
+
+        Assert.Contains("characters.파파라.builds.A: 중복된 빌드입니다", load.Errors);
+        Assert.Equal(new[] { ('A', "가"), ('B', "나") }, load.Rules.BuildsOf(1).Select(b => (b.Letter, b.Label)));
+        Assert.DoesNotContain(load.Rules.Rules, r => r.RelicIds.Contains(200));
+    }
+
+    [Fact]
+    public void 캐릭터_good_avoid에도_있는_빌드_코어는_경고하고_빌드에_남긴다()
+    {
+        const string json = """
+        { "version": 1, "characters": { "파파라": { "role": "dealer", "good": ["손풍기"], "avoid": ["커터칼"],
+          "builds": { "A": { "label": "가", "core": ["아드레날린", "손풍기"] }, "B": { "label": "나", "core": ["커터칼"] } } } } }
+        """;
+
+        var load = RuleBook.Load(json, Names);
+
+        Assert.Equal(2, load.Errors.Count);
+        Assert.Contains(load.Errors, e => e.StartsWith("characters.파파라.builds.A.core[1]: '손풍기'은(는) 캐릭터 good/avoid에도 있습니다", StringComparison.Ordinal));
+        Assert.Contains(load.Errors, e => e.StartsWith("characters.파파라.builds.B.core[0]: '커터칼'은(는) 캐릭터 good/avoid에도 있습니다", StringComparison.Ordinal));
+        Assert.Equal(new[] { 100, 200, 201 }, load.Rules.BuildsOf(1)[0].Core.OrderBy(i => i));
+        Assert.Contains(load.Rules.Rules, r => r.Build == 'B' && r.RelicIds.Contains(300));
+    }
+
+    [Fact]
     public void 빌드가_하나만_남으면_builds_전체를_무시한다()
     {
         const string json = """

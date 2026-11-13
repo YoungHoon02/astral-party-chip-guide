@@ -278,11 +278,27 @@ public class ChipAdvisorTests
 
         var advice = Judge(rules, At(Souri, owned: new[] { Kit }, map: 7), Glove, Carp, Adr);
 
-        Assert.Equal(Verdict.Core, advice[0]!.Verdict);
+        Assert.Equal((Verdict.Core, "딜러 공용 코어"), (advice[0]!.Verdict, advice[0]!.Reason));
         Assert.Empty(advice[0]!.Builds);
-        Assert.Equal(Verdict.Core, advice[1]!.Verdict);
+        Assert.Equal((Verdict.Core, "맵 코어"), (advice[1]!.Verdict, advice[1]!.Reason));
         Assert.Empty(advice[1]!.Builds);
         Assert.Equal(Verdict.Avoid, advice[2]!.Verdict);
+    }
+
+    [Fact]
+    public void 빌드_밖_조건부_무난과_보류가_걸려도_닫힌_빌드_칩은_덮어쓴다()
+    {
+        var rules = Builds(new[] { A, B },
+            new ChipRule(Ids(Buffer), Verdict.Good, "아군 메가스와 무난", 3, new Condition(Ally: Ids(Megas))),
+            new ChipRule(Ids(Kit), Verdict.Avoid, "맵 보류", 3, new Condition(Map: Ids(7))));
+
+        var advice = Judge(rules, At(Souri, owned: new[] { Whet }, allies: new[] { Megas }, map: 7), Buffer, Kit);
+
+        const string closed = "코어 A를 골라 보류 (B 힐 탱커 빌드 칩)";
+        Assert.Equal((Verdict.Avoid, closed), (advice[0]!.Verdict, advice[0]!.Reason));
+        Assert.Contains(new Note(Verdict.Good, "아군 메가스와 무난"), advice[0]!.Notes);
+        Assert.Equal((Verdict.Avoid, closed), (advice[1]!.Verdict, advice[1]!.Reason));
+        Assert.Contains(new Note(Verdict.Avoid, "맵 보류"), advice[1]!.Notes);
     }
 
     [Fact]
