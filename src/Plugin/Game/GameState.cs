@@ -37,7 +37,7 @@ internal static class GameState
             if (HeroId(player) is { } hero) allies.Add(hero);
             allyRelics.UnionWith(Ints(data.Call("GetRelicIds")));
         }
-        return new Situation(selfHero.Value, Ints(self.Call("GetRelicIds")), allies, room.Get<int>("MapId"), allyRelics);
+        return new Situation(selfHero.Value, Ints(self.Call("GetRelicIds")), allies, room.Get<int>("MapId"), allyRelics, id => GameTables.ChipInfo(id).Keyword);
     }
 
     internal static string DescribePlayers()

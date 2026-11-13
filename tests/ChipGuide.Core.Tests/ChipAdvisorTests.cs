@@ -6,6 +6,7 @@ public class ChipAdvisorTests
     private const int Adrenaline = 100, FanBlue = 200, FanPurple = 201, Cutter = 300, Glove = 400;
     private const int Souri = 10;
     private const int Adr = 110, AdrHigh = 111, Whet = 112, Buffer = 120, Kit = 121, Battery = 140, Carp = 150, Mark = 160;
+    private const int MarkChip = 170, CureChip = 180;
 
     private static HashSet<int> Ids(params int[] ids) => new(ids);
 
@@ -29,6 +30,16 @@ public class ChipAdvisorTests
     private static readonly BuildDef A = new('A', "아드 반격", Ids(Adr, AdrHigh, Whet));
     private static readonly BuildDef B = new('B', "힐 탱커", Ids(Buffer, Kit));
     private static readonly BuildDef C = new('C', "표식 에너지", Ids(Mark));
+
+    private static readonly Dictionary<int, Keyword> Keywords = new()
+    {
+        [Battery] = Keyword.Energy,
+        [Adr] = Keyword.Salary, [AdrHigh] = Keyword.Salary,
+        [Buffer] = Keyword.Mark, [Kit] = Keyword.Mark,
+        [MarkChip] = Keyword.Mark, [CureChip] = Keyword.Cure,
+    };
+
+    private static Situation Keyed(params int[] owned) => At(Souri, owned: owned) with { KeywordOf = id => Keywords.GetValueOrDefault(id) };
 
     private static IReadOnlyList<Advice?> Judge(RuleSet rules, Situation at, params int[] chips) =>
         ChipAdvisor.Advise(rules, at, chips.Select(id => new ChipOption(id, Grade.Purple)).ToList());
@@ -347,5 +358,52 @@ public class ChipAdvisorTests
         Assert.Equal(Array.Empty<char>(), before[Battery]);
         Assert.Equal(new[] { 'B' }, before[Kit]);
         Assert.Equal(new[] { Adr, AdrHigh, Whet, Battery }, after.OrderBy(i => i));
+    }
+
+    [Fact]
+    public void 키워드_2종_제한으로_갈_수_없는_빌드는_보류하고_제목_띠에서_뺀다()
+    {
+        var rules = Builds(new[] { A, B });
+
+        var advice = Judge(rules, Keyed(MarkChip), Adr, Buffer, Battery);
+
+        Assert.Equal((Verdict.Avoid, "키워드 2종 제한으로 갈 수 없는 빌드라 보류 (A 아드 반격 빌드 칩)"), (advice[0]!.Verdict, advice[0]!.Reason));
+        Assert.Empty(advice[0]!.Builds);
+        Assert.Contains(new Note(Verdict.Core, "A 코어"), advice[0]!.Notes);
+        Assert.Equal(new[] { 'B' }, advice[1]!.Builds);
+        Assert.Equal(Verdict.Core, advice[2]!.Verdict);
+        Assert.Equal(new[] { new BuildLine('B', "힐 탱커") }, ChipAdvisor.Builds(rules, Keyed(MarkChip)));
+        Assert.Equal(new[] { Buffer, Kit, Battery }, ChipAdvisor.CoreChips(rules, Keyed(MarkChip)).OrderBy(i => i));
+        Assert.Equal(new[] { 'A', 'B' }, ChipAdvisor.Builds(rules, At(Souri, owned: new[] { MarkChip }))!.Select(b => b.Letter));
+    }
+
+    [Fact]
+    public void 키워드_두_종을_이미_가지면_공용_코어_키워드는_따지지_않는다()
+    {
+        var rules = Builds(new[] { A, B });
+
+        Assert.Equal(new[] { 'B' }, ChipAdvisor.Builds(rules, Keyed(MarkChip, CureChip))!.Select(b => b.Letter));
+    }
+
+    [Fact]
+    public void 모든_빌드가_키워드로_막히거나_이미_고른_빌드면_빼지_않는다()
+    {
+        var rules = Builds(new[] { A, B });
+
+        Assert.Equal(new[] { 'A', 'B' }, ChipAdvisor.Builds(rules, Keyed(CureChip))!.Select(b => b.Letter));
+        Assert.Equal(Verdict.Core, Judge(rules, Keyed(CureChip), Adr)[0]!.Verdict);
+        Assert.Equal(new[] { 'A' }, ChipAdvisor.Builds(rules, Keyed(Whet, MarkChip))!.Select(b => b.Letter));
+    }
+
+    [Fact]
+    public void 고른_빌드_둘_중_키워드로_막힌_쪽만_닫고_고르지_않은_빌드는_고른_빌드를_이유로_든다()
+    {
+        var rules = Builds(new[] { A, B, C });
+
+        var advice = Judge(rules, Keyed(Whet, Kit), Adr, Buffer, Mark);
+
+        Assert.Equal((Verdict.Avoid, "키워드 2종 제한으로 갈 수 없는 빌드라 보류 (A 아드 반격 빌드 칩)"), (advice[0]!.Verdict, advice[0]!.Reason));
+        Assert.Equal(new[] { 'B' }, advice[1]!.Builds);
+        Assert.Equal((Verdict.Avoid, "코어 A·B를 골라 보류 (C 표식 에너지 빌드 칩)"), (advice[2]!.Verdict, advice[2]!.Reason));
     }
 }

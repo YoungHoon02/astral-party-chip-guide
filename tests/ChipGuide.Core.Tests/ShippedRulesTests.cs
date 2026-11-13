@@ -9,6 +9,8 @@ public class ShippedRulesTests
     private static readonly string NamesJson = File.ReadAllText(Path.Combine(Root, "tests", "ChipGuide.Core.Tests", "Fixtures", "names.json"));
     internal static readonly NameTable Names = NameTable.Parse(NamesJson);
     private static readonly RuleLoad Load = RuleBook.Load(File.ReadAllText(RulesPath), Names);
+    private static readonly Dictionary<int, Keyword> ChipKeywords = JsonDocument.Parse(NamesJson).RootElement.GetProperty("chips").EnumerateArray()
+        .ToDictionary(c => c.GetProperty("id").GetInt32(), c => (Keyword)c.GetProperty("keyword").GetInt32());
 
     private static string FindRoot()
     {
@@ -29,7 +31,8 @@ public class ShippedRulesTests
             ChipIds(Value("owned")),
             Value("ally").Select(Hero).ToHashSet(),
             Value("map") is [var map] ? Names.Map(map)!.First() : 0,
-            ChipIds(Value("allyOwned")));
+            ChipIds(Value("allyOwned")),
+            id => ChipKeywords.GetValueOrDefault(id));
     }
 
     [Fact]
@@ -82,6 +85,10 @@ public class ShippedRulesTests
         }
     }
 
+    [Fact]
+    public void 자스민은_표식_칩을_가지면_에너지_공용_코어와_함께_못_가는_스타_이동_빌드를_뺀다() =>
+        Assert.Equal(new[] { 'B' }, ChipAdvisor.Builds(Load.Rules, At("자스민", "owned:타겟 보드"))!.Select(b => b.Letter));
+
     [Theory]
     [InlineData("파파라", "숫돌", Grade.Purple, "owned:커터칼", Verdict.Core)]
     [InlineData("파파라", "숫돌", Grade.Purple, "allyOwned:고기 가득 스튜", Verdict.Core)]
@@ -95,6 +102,8 @@ public class ShippedRulesTests
     [InlineData("자스민", "손전등", Grade.Purple, "owned:이글 아이 조준경", Verdict.Avoid)]
     [InlineData("자스민", "워프 엔진", Grade.Blue, "owned:이글 아이 조준경", Verdict.Core)]
     [InlineData("자스민", "복싱 글러브", Grade.Blue, "", Verdict.Core)]
+    [InlineData("자스민", "8면체 주사위", Grade.Blue, "owned:타겟 보드", Verdict.Avoid)]
+    [InlineData("자스민", "표준 조준경", Grade.Purple, "owned:타겟 보드", Verdict.Core)]
     [InlineData("니디 걸", "아드레날린", Grade.Orange, "", Verdict.Core)]
     [InlineData("니디 걸", "커터칼", Grade.Purple, "", Verdict.Core)]
     [InlineData("니디 걸", "커터칼", Grade.Purple, "owned:숫돌", Verdict.Avoid)]

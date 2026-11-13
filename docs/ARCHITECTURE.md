@@ -27,7 +27,7 @@ TemplateTool  게임 데이터가 준비되면 칩·캐릭터·맵 테이블을 
 | GameStateReader | 캐릭터·보유 칩·아군·아군 보유 칩·맵 읽기 | `src/Plugin/Game/GameState.cs` |
 | PvE 게이트 | PvE 여부 판정 | `src/Plugin/Game/PveGate.cs` |
 | TemplateTool | 게임 테이블을 `names.json`으로 출력 | `src/Plugin/Game/GameTables.cs` |
-| ChipAdvisor | 판정 계산 (게임 의존 없음). 빌드가 있는 캐릭터는 가진 칩으로 열린 빌드를 정하고(아무 빌드도 고르지 않았으면 모두 열림), 판정 마지막에 닫힌 빌드의 코어 칩을 보류로 덮어씀. 빌드와 상관없이 코어인 칩은 덮어쓰지 않음. 코어 칩에 열린 빌드 글자를 붙이고, 제목 띠에 보일 열린 빌드 목록을 냄 | `src/Core/ChipAdvisor.cs` |
+| ChipAdvisor | 판정 계산 (게임 의존 없음). 빌드가 있는 캐릭터는 가진 칩으로 열린 빌드를 정하고(아무 빌드도 고르지 않았으면 모두 열림), 그중 키워드 2종 제한에 걸린 빌드를 닫은 뒤(칩 키워드는 게임이 `Situation.KeywordOf`로 넘김), 판정 마지막에 닫힌 빌드의 코어 칩을 보류로 덮어씀. 빌드와 상관없이 코어인 칩은 덮어쓰지 않음. 코어 칩에 열린 빌드 글자를 붙이고, 제목 띠에 보일 열린 빌드 목록을 냄 | `src/Core/ChipAdvisor.cs` |
 | KeywordLock | 키워드 고정 경고 문구. 규칙 파일과 별개로 칩의 `KeyWordType`만으로 판단 | `src/Core/KeywordLock.cs` |
 | RuleBook / RuleSource | 규칙 해석·검증, 실패 시 이전 규칙 유지. 캐릭터의 `builds`를 읽어 빌드(글자·설명·코어 칩)와 빌드 글자가 달린 캐릭터 단계 규칙을 만듦. 빌드 `good`/`avoid`는 그 빌드를 고른 뒤에만 걸림 | `src/Core/RuleBook.cs`, `RuleSource.cs` |
 | RuleUpdate / RuleFiles | `rules/rules.json`을 `rules.default.json`으로 ZIP에 함께 넣어 두고, 시작할 때 첫 줄의 기본 규칙 지문이 다르면 `rules.json`을 바꿈. 직접 고친 흔적이 있으면 `rules.json.bak`으로 백업하고, 쓰지 못하면 그 실행은 `rules.default.json`의 규칙을 씀. DLL에 내장하지 않는 이유: 큰 텍스트가 든 서명 없는 DLL이 Windows 보안의 머신러닝 오탐(`Trojan:Script/…!ml`)을 불렀음(v0.4.0) | `src/Core/RuleUpdate.cs`, `src/Plugin/RuleFiles.cs` |
