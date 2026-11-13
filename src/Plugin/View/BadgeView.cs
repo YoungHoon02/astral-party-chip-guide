@@ -31,9 +31,9 @@ internal static class BadgeView
     private static Tooltip? _tooltip;
     private static readonly IReadOnlySet<Keyword> NoKeywords = new HashSet<Keyword>();
 
-    internal static bool Showing => Badges.Count > 0 || RoleTags.Count > 0 || BuildTags.Count > 0 || KeywordPanel.Alive || CoreStrip.Alive;
+    internal static bool Showing => Badges.Count > 0 || RoleTags.Count > 0 || BuildTags.Count > 0 || KeywordPanel.Alive || CoreStrip.Alive || BuildPanel.Alive;
 
-    internal static void Show(RuntimeObject container, IReadOnlyList<CardView> cards, IReadOnlyList<KeywordRow>? keywords, IReadOnlyList<CoreChip>? core, RoleWeights? weights, bool roleTags)
+    internal static void Show(RuntimeObject container, IReadOnlyList<CardView> cards, IReadOnlyList<KeywordRow>? keywords, IReadOnlyList<CoreChip>? core, IReadOnlyList<BuildLine>? builds, RoleWeights? weights, bool roleTags)
     {
         // 카드 객체는 창·리롤마다 재사용되므로 이전 배지를 먼저 걷어내야 겹쳐 붙지 않는다.
         Clear();
@@ -58,6 +58,7 @@ internal static class BadgeView
             var iconClass = IconClass(cards[0].Item);
             KeywordPanel.Show(container, keywords, weights, panelText, iconClass);
             CoreStrip.Show(container, core, panelText, iconClass);
+            BuildPanel.Show(container, builds, panelText);
         }
     }
 
@@ -114,6 +115,8 @@ internal static class BadgeView
         catch (Exception ex) { Plugin.Logger.LogWarning($"키워드 패널을 정리하지 못했습니다: {ex.Message}"); }
         try { CoreStrip.Clear(); }
         catch (Exception ex) { Plugin.Logger.LogWarning($"코어 칩 줄을 정리하지 못했습니다: {ex.Message}"); }
+        try { BuildPanel.Clear(); }
+        catch (Exception ex) { Plugin.Logger.LogWarning($"빌드 설명을 정리하지 못했습니다: {ex.Message}"); }
         var failed = false;
         try
         {

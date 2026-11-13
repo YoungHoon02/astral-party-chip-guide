@@ -149,7 +149,7 @@ internal static class Guide
         BadgeView.Show(screen.Container,
             screen.Cards.Select((card, i) => new CardView(card.Item, GameTables.ChipName(card.RelicId), advice[i], warnings[i], warn ? KeywordLock.WouldLock(owned, infos[i].Keyword) : NoKeywords, roles[i],
                 infos[i].Keyword, KeywordLock.State(owned, infos[i].Keyword), BuildText(advice[i], builds))).ToList(),
-            panel, coreChips, weights, showRoles);
+            panel, coreChips, Plugin.BuildPanel.Value ? builds : null, weights, showRoles);
         _signature = signature;
 
         if (Plugin.Diagnostics.Value)
