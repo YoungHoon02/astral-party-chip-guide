@@ -13,4 +13,6 @@ public sealed record Situation(int HeroId, IReadOnlySet<int> OwnedRelics, IReadO
 
 public sealed record Note(Verdict Verdict, string Why);
 
-public sealed record Advice(ChipOption Option, Verdict Verdict, string Reason, IReadOnlyList<Note> Notes);
+public sealed record Advice(ChipOption Option, Verdict Verdict, string Reason, IReadOnlyList<Note> Notes, IReadOnlyList<char> Builds);
+
+public sealed record BuildLine(char Letter, string Label);
