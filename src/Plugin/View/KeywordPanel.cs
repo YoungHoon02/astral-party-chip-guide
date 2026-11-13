@@ -13,6 +13,8 @@ internal static class KeywordPanel
         LockedInk = new(0.5f, 0.5f, 0.5f, 1f), PreviewInk = new(0.93f, 0.55f, 0.13f, 1f), GainInk = new(0.45f, 0.9f, 0.45f, 1f),
         Background = new(0.04f, 0.05f, 0.07f, 0.55f);
 
+    internal const float PaddingRatio = 0.6f;
+
     private static readonly List<(RuntimeObject Icon, string Name)> Icons = new();
     private static RuntimeObject? _panel;
     private static RuntimeObject? _container;
@@ -113,7 +115,7 @@ internal static class KeywordPanel
         var panel = RuntimeObject.New(GameUi.Require("FairyGUI", "GComponent"));
         try
         {
-            var padding = _textSize * 0.6f;
+            var padding = _textSize * PaddingRatio;
             var labels = rows.Select(row => row.Select(segment => Ui.Text(segment.Text, _textSize, segment.Ink, 0f, wrap: false)).ToList()).ToList();
             var lineHeight = labels.SelectMany(row => row).Max(label => label.Get<float>("height"));
             var iconSize = lineHeight * 0.9f;

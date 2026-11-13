@@ -59,7 +59,7 @@ internal static class BuildPanel
             }
             var height = y + lineHeight;
             panel.Call("SetSize", width, height);
-            panel.Call("SetXY", container.Get<float>("width") - textSize * 0.5f - width, (band.Top + band.Bottom - height) / 2);
+            panel.Call("SetXY", container.Get<float>("width") - textSize * KeywordPanel.PaddingRatio - width, (band.Top + band.Bottom - height) / 2);
             container.Call("AddChild", panel);
             _panel = panel;
         }
