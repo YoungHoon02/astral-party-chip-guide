@@ -11,6 +11,7 @@ EventSystem.Update Postfix (프레임당 1회)
  └ ChipAdvisor         (순수 C#) 상황 + 선택지 + 규칙 → 칩별 판정과 이유
  └ BadgeView           칩 카드에 배지, 선택한 칩의 이유 툴팁
  └ KeywordPanel        제목 띠 위 키워드·역할군 가중치 패널
+ └ BuildPanel          제목 띠 오른쪽 빌드 A·B·C 설명
  └ CoreStrip           확인 버튼 아래 코어 칩 아이콘 줄
 
 RuleBook      rules.json 로드·검증, 파일이 바뀌면 다시 읽음
@@ -26,13 +27,14 @@ TemplateTool  게임 데이터가 준비되면 칩·캐릭터·맵 테이블을 
 | GameStateReader | 캐릭터·보유 칩·아군·아군 보유 칩·맵 읽기 | `src/Plugin/Game/GameState.cs` |
 | PvE 게이트 | PvE 여부 판정 | `src/Plugin/Game/PveGate.cs` |
 | TemplateTool | 게임 테이블을 `names.json`으로 출력 | `src/Plugin/Game/GameTables.cs` |
-| ChipAdvisor | 판정 계산 (게임 의존 없음) | `src/Core/ChipAdvisor.cs` |
+| ChipAdvisor | 판정 계산 (게임 의존 없음). 빌드가 있는 캐릭터는 가진 칩으로 열린 빌드를 정하고(아무 빌드도 고르지 않았으면 모두 열림), 판정 마지막에 닫힌 빌드의 코어 칩을 보류로 덮어씀. 빌드와 상관없이 코어인 칩은 덮어쓰지 않음. 코어 칩에 열린 빌드 글자를 붙이고, 제목 띠에 보일 열린 빌드 목록을 냄 | `src/Core/ChipAdvisor.cs` |
 | KeywordLock | 키워드 고정 경고 문구. 규칙 파일과 별개로 칩의 `KeyWordType`만으로 판단 | `src/Core/KeywordLock.cs` |
-| RuleBook / RuleSource | 규칙 해석·검증, 실패 시 이전 규칙 유지 | `src/Core/RuleBook.cs`, `RuleSource.cs` |
+| RuleBook / RuleSource | 규칙 해석·검증, 실패 시 이전 규칙 유지. 캐릭터의 `builds`를 읽어 빌드(글자·설명·코어 칩)와 빌드 글자가 달린 캐릭터 단계 규칙을 만듦. 빌드 `good`/`avoid`는 그 빌드를 고른 뒤에만 걸림 | `src/Core/RuleBook.cs`, `RuleSource.cs` |
 | RuleUpdate / RuleFiles | `rules/rules.json`을 `rules.default.json`으로 ZIP에 함께 넣어 두고, 시작할 때 첫 줄의 기본 규칙 지문이 다르면 `rules.json`을 바꿈. 직접 고친 흔적이 있으면 `rules.json.bak`으로 백업하고, 쓰지 못하면 그 실행은 `rules.default.json`의 규칙을 씀. DLL에 내장하지 않는 이유: 큰 텍스트가 든 서명 없는 DLL이 Windows 보안의 머신러닝 오탐(`Trojan:Script/…!ml`)을 불렀음(v0.4.0) | `src/Core/RuleUpdate.cs`, `src/Plugin/RuleFiles.cs` |
 | NameTable | 이름 ↔ ID 변환. 지금 게임의 `names.json`에 없는 이름은 동봉한 한국어 참조표 `rules/names.ko.json`(배포 시 `names.ko.json`)에서 같은 ID로 찾음 | `src/Core/NameTable.cs` |
 | BadgeView | 배지·툴팁 표시와 제거, 선택한 칩 판정 | `src/Plugin/View/BadgeView.cs` |
 | KeywordPanel / CoreStrip | 키워드·가중치 패널, 코어 칩 아이콘 줄 | `src/Plugin/View/KeywordPanel.cs`, `CoreStrip.cs` |
+| BuildPanel / BuildTag / TitleBand | 제목 띠 오른쪽에 열린 빌드의 글자 블럭과 설명 표시. 띠를 못 찾으면 그리지 않음. 글자 블럭(A·B·C 고정 색)은 배지 아래와 코어 칩 줄에서도 같이 씀. 제목 띠 찾기는 키워드 패널과 함께 씀 | `src/Plugin/View/BuildPanel.cs`, `BuildTag.cs`, `TitleBand.cs` |
 | ReleaseCheck / Updater | 게임 시작 때 게임 밖 새 버전 확인 프로그램 실행 (아래 "릴리스 알림") | `src/Plugin/ReleaseCheck.cs`, `src/Updater/` |
 | Guide | 위 요소를 묶는 틱 루프. 칩 창 탐색 0.2초, 규칙 파일 변경 확인 2초 간격 | `src/Plugin/Guide.cs` |
 
