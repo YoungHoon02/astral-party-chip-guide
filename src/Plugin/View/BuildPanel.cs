@@ -8,6 +8,7 @@ internal static class BuildPanel
 {
     // 제목이 띠 가운데 정렬이라, 오른쪽 끝에서 이 폭 안에 두면 제목 글자와 겹치지 않는다.
     private const float MaxWidthRatio = 0.3f;
+    private static readonly string[] SideButtons = { "btn_OpenExpr", "btn_OpenChat", "btn_MapTool", "btn_MapChat" };
 
     private static RuntimeObject? _panel;
 
@@ -59,7 +60,7 @@ internal static class BuildPanel
             }
             var height = y + lineHeight;
             panel.Call("SetSize", width, height);
-            panel.Call("SetXY", container.Get<float>("width") - textSize * KeywordPanel.PaddingRatio - width, (band.Top + band.Bottom - height) / 2);
+            panel.Call("SetXY", RightLimit(container, band.Top, band.Bottom) - textSize * KeywordPanel.PaddingRatio - width, (band.Top + band.Bottom - height) / 2);
             container.Call("AddChild", panel);
             _panel = panel;
         }
@@ -75,4 +76,31 @@ internal static class BuildPanel
         try { GameUi.Dispose(_panel); }
         finally { _panel = null; }
     }
+
+    // 게임의 표정·채팅 버튼 줄이 칩 선택 창 위에 떠서 띠 오른쪽 끝을 덮으므로, 띠와 겹치는 버튼의 왼쪽에서 멈춘다.
+    private static float RightLimit(RuntimeObject container, float top, float bottom)
+    {
+        var right = container.Get<float>("width");
+        try
+        {
+            if (GameUi.Root() is not { } root || GameUi.FindWindow(root, "ExpressionWindow")?.Get("contentPane")?.Field("com_Interact_PC") is not { } buttons)
+                return right;
+            foreach (var name in SideButtons)
+            {
+                var button = buttons.Field(name);
+                if (!GameUi.Visible(button)) continue;
+                var a = ToLocal(container, button!, Vector2.zero);
+                var b = ToLocal(container, button!, new Vector2(button!.Get<float>("width"), button.Get<float>("height")));
+                if (Math.Max(a.y, b.y) > top && Math.Min(a.y, b.y) < bottom) right = Math.Min(right, Math.Min(a.x, b.x));
+            }
+        }
+        catch (Exception ex)
+        {
+            if (Plugin.Diagnostics.Value) Plugin.Logger.LogInfo($"[진단] 오른쪽 버튼 위치를 읽지 못해 띠 오른쪽 끝에 붙입니다: {ex.Message}");
+        }
+        return right;
+    }
+
+    private static Vector2 ToLocal(RuntimeObject container, RuntimeObject target, Vector2 point) =>
+        container.Call("GlobalToLocal", target.Call("LocalToGlobal", point)!.Value<Vector2>())!.Value<Vector2>();
 }

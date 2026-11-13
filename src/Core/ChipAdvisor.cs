@@ -27,7 +27,10 @@ public static class ChipAdvisor
     {
         var builds = rules.BuildsOf(situation.HeroId);
         if (builds.Count == 0) return null;
-        return OpenBuilds(builds, situation).Select(build => new BuildLine(build.Letter, build.Label)).ToList();
+        // 열림·닫힘은 가진 칩으로 정하지만, 아군·맵 때문에 코어가 하나도 안 남은 빌드를 띠에 남기면 코어 줄과 말이 어긋난다.
+        var live = CoreAdvice(rules, situation).SelectMany(advice => advice.Builds).ToHashSet();
+        return OpenBuilds(builds, situation).Where(build => live.Contains(build.Letter))
+            .Select(build => new BuildLine(build.Letter, build.Label)).ToList();
     }
 
     public static string GradeName(Grade grade) => grade switch

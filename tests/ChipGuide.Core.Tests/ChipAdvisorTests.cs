@@ -327,6 +327,16 @@ public class ChipAdvisorTests
     }
 
     [Fact]
+    public void 아군_조건으로_코어가_모두_막힌_빌드는_제목_띠에서_뺀다()
+    {
+        var rules = Builds(new[] { A, B },
+            new ChipRule(Ids(Adr, AdrHigh, Whet), Verdict.Avoid, "아군 회복", 3, new Condition(Ally: Ids(Lulu))));
+
+        Assert.Equal(new[] { new BuildLine('B', "힐 탱커") }, ChipAdvisor.Builds(rules, At(Souri, allies: new[] { Lulu })));
+        Assert.Empty(ChipAdvisor.Builds(rules, At(Souri, owned: new[] { Whet }, allies: new[] { Lulu }))!);
+    }
+
+    [Fact]
     public void 코어_판정은_열린_빌드_글자와_함께_코어_칩을_돌려준다()
     {
         var rules = Builds(new[] { A, B });
