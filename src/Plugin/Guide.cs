@@ -148,7 +148,7 @@ internal static class Guide
             : null;
         BadgeView.Show(screen.Container,
             screen.Cards.Select((card, i) => new CardView(card.Item, GameTables.ChipName(card.RelicId), advice[i], warnings[i], warn ? KeywordLock.WouldLock(owned, infos[i].Keyword) : NoKeywords, roles[i],
-                infos[i].Keyword, KeywordLock.State(owned, infos[i].Keyword), BuildText(advice[i], builds))).ToList(),
+                infos[i].Keyword, KeywordLock.State(owned, infos[i].Keyword), BuildCaption(advice[i], builds))).ToList(),
             panel, coreChips, Plugin.BuildPanel.Value ? builds : null, weights, showRoles);
         _signature = signature;
 
@@ -158,7 +158,7 @@ internal static class Guide
                 + $"판정={string.Join(" / ", options.Select((o, i) => $"{o.RelicId}({o.Grade},{infos[i].Keyword})={advice[i]?.Verdict.ToString() ?? "없음"}{(warnings[i] != null ? "+키워드경고" : "")}"))}");
     }
 
-    private static string? BuildText(Advice? advice, IReadOnlyList<BuildLine>? builds)
+    private static string? BuildCaption(Advice? advice, IReadOnlyList<BuildLine>? builds)
     {
         if (advice == null || advice.Builds.Count == 0) return null;
         var letters = string.Join("·", advice.Builds);

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ChipGuide.Plugin.View;
 
-internal sealed record CardView(RuntimeObject Item, string Name, Advice? Advice, string? Warning, IReadOnlySet<Keyword> WouldLock, ChipRole Role, Keyword Keyword, KeywordState KeywordState, string? BuildLine);
+internal sealed record CardView(RuntimeObject Item, string Name, Advice? Advice, string? Warning, IReadOnlySet<Keyword> WouldLock, ChipRole Role, Keyword Keyword, KeywordState KeywordState, string? BuildCaption);
 
 internal static class BadgeView
 {
@@ -275,7 +275,7 @@ internal static class BadgeView
             {
                 var tag = BuildTag.Create(letters[i], size, badge.TextSize);
                 BuildTags.Add(tag);
-                tag.Call("SetXY", vertical ? right - size : right - size * (i + 1), vertical ? top + size * i : top);
+                tag.Call("SetXY", vertical ? right - size : right - size * (letters.Count - i), vertical ? top + size * i : top);
                 badge.Host.Call("AddChild", tag);
             }
         }
@@ -309,7 +309,7 @@ internal static class BadgeView
     private static List<string> TooltipLines(CardView card)
     {
         var lines = new List<string>();
-        if (card.BuildLine != null) lines.Add(card.BuildLine);
+        if (card.BuildCaption != null) lines.Add(card.BuildCaption);
         if (card.Advice is { } advice)
         {
             // 이긴 판정은 배지에 이미 보이므로 기호를 붙이지 않는다. 참고 줄은 판정이 배지와 다를 수 있어 기호를 남긴다.

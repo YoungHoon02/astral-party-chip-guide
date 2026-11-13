@@ -137,7 +137,7 @@ internal static class CoreStrip
             {
                 var tag = BuildTag.Create(chip.Builds[i], size, (int)Math.Round(size / 1.6f));
                 strip.Call("AddChild", tag);
-                tag.Call("SetXY", right - size * (i + 1), bottom - size);
+                tag.Call("SetXY", right - size * (chip.Builds.Count - i), bottom - size);
             }
         }
         catch (Exception ex)
