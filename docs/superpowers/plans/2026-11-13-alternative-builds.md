@@ -230,9 +230,12 @@ public void 갈림길_전에는_모든_빌드_코어가_코어이고_글자가_�
 {
     var advice = Judge(Builds(new[] { A, B }), At(Souri), Adr, Buffer, Battery);
 
-    Assert.Equal((Verdict.Core, new[] { 'A' }), (advice[0]!.Verdict, advice[0]!.Builds.ToArray()));
-    Assert.Equal((Verdict.Core, new[] { 'B' }), (advice[1]!.Verdict, advice[1]!.Builds.ToArray()));
-    Assert.Equal((Verdict.Core, Array.Empty<char>()), (advice[2]!.Verdict, advice[2]!.Builds.ToArray()));
+    Assert.Equal(Verdict.Core, advice[0]!.Verdict);
+    Assert.Equal(new[] { 'A' }, advice[0]!.Builds);
+    Assert.Equal(Verdict.Core, advice[1]!.Verdict);
+    Assert.Equal(new[] { 'B' }, advice[1]!.Builds);
+    Assert.Equal(Verdict.Core, advice[2]!.Verdict);
+    Assert.Empty(advice[2]!.Builds);
 }
 
 [Fact]
@@ -244,7 +247,8 @@ public void 한_빌드_칩을_가지면_다른_빌드_코어는_보류가_되고
     Assert.Equal("코어 A를 골라 보류 (B 힐 탱커 빌드 칩)", advice[0]!.Reason);
     Assert.Empty(advice[0]!.Builds);
     Assert.Contains(new Note(Verdict.Core, "B 코어"), advice[0]!.Notes);
-    Assert.Equal((Verdict.Core, new[] { 'A' }), (advice[1]!.Verdict, advice[1]!.Builds.ToArray()));
+    Assert.Equal(Verdict.Core, advice[1]!.Verdict);
+    Assert.Equal(new[] { 'A' }, advice[1]!.Builds);
 }
 
 [Fact]
@@ -275,8 +279,10 @@ public void 빌드와_상관없이_코어인_칩은_덮어쓰지_않는다()
 
     var advice = Judge(rules, At(Souri, owned: new[] { Kit }, map: 7), Glove, Carp, Adr);
 
-    Assert.Equal((Verdict.Core, Array.Empty<char>()), (advice[0]!.Verdict, advice[0]!.Builds.ToArray()));
-    Assert.Equal((Verdict.Core, Array.Empty<char>()), (advice[1]!.Verdict, advice[1]!.Builds.ToArray()));
+    Assert.Equal(Verdict.Core, advice[0]!.Verdict);
+    Assert.Empty(advice[0]!.Builds);
+    Assert.Equal(Verdict.Core, advice[1]!.Verdict);
+    Assert.Empty(advice[1]!.Builds);
     Assert.Equal(Verdict.Avoid, advice[2]!.Verdict);
 }
 
@@ -315,7 +321,7 @@ public void 코어_판정은_열린_빌드_글자와_함께_코어_칩을_돌려
 
     Assert.Equal(Array.Empty<char>(), before[Battery]);
     Assert.Equal(new[] { 'B' }, before[Kit]);
-    Assert.Equal(new[] { Adr, AdrHigh, Battery, Whet }, after.OrderBy(i => i));
+    Assert.Equal(new[] { Adr, AdrHigh, Whet, Battery }, after.OrderBy(i => i));
 }
 ```
 
