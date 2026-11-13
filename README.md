@@ -113,7 +113,7 @@ F10을 누르면 모드 표시를 한 번에 숨기거나 다시 보여 줍니�
 - 디시인사이드 [아스트랄 파티 갤러리](https://gall.dcinside.com/mgallery/board/lists/?id=astralparty)의 공략·후기 글도 판정을 정할 때 참고했습니다.
 - 공략에 없는 조합은 칩 설명과 캐릭터 스킬([Astral Party 커뮤니티 위키](https://astralparty.miraheze.org/wiki/Characters))로 추정해 보탰습니다. 어떤 판정이 추정인지는 [추천 로직 문서](docs/RECOMMENDATION.md)에 있습니다.
 
-## v0.6.0
+## v0.6.0-beta.1
 
 **사전 공개판입니다.** 업데이트 알림은 뜨지 않으며, 원하는 분만 릴리스 페이지에서 받아 쓰시면 됩니다. 실전 의견을 받아 다듬은 뒤 정식판을 냅니다.
 
