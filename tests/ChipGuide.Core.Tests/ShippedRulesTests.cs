@@ -68,9 +68,17 @@ public class ShippedRulesTests
 
         foreach (var hero in heroes)
         {
-            var core = ChipAdvisor.CoreChips(Load.Rules, At(hero, "")).Select(id => chips[id]).ToList();
-            Assert.True(core.Select(c => c.Base).Distinct().Count() >= 4, $"{hero}: 코어 {core.Select(c => c.Base).Distinct().Count()}개");
-            Assert.True(KeywordLock.Owned(core.Select(c => c.Keyword)).Count <= KeywordLock.Limit, $"{hero}: 코어 키워드가 서로 막음");
+            var builds = Load.Rules.BuildsOf(Hero(hero));
+            var situations = builds.Count == 0
+                ? new[] { (Label: hero, Situation: At(hero, "")) }
+                : builds.Select(b => (Label: $"{hero} 코어 {b.Letter}",
+                    Situation: new Situation(Hero(hero), new HashSet<int> { b.Core.Min() }, new HashSet<int>(), 0, new HashSet<int>()))).ToArray();
+            foreach (var (label, situation) in situations)
+            {
+                var core = ChipAdvisor.CoreChips(Load.Rules, situation).Select(id => chips[id]).ToList();
+                Assert.True(core.Select(c => c.Base).Distinct().Count() >= 4, $"{label}: 코어 {core.Select(c => c.Base).Distinct().Count()}개");
+                Assert.True(KeywordLock.Owned(core.Select(c => c.Keyword)).Count <= KeywordLock.Limit, $"{label}: 코어 키워드가 서로 막음");
+            }
         }
     }
 
@@ -139,8 +147,13 @@ public class ShippedRulesTests
     [InlineData("최고귀염뽀짝천사", "슈팅 스타", Grade.Purple, "map:마법 학교", Verdict.Avoid)]
     [InlineData("최고귀염뽀짝천사", "슈팅 스타", Grade.Orange, "map:유령 골목", Verdict.Avoid)]
     [InlineData("소우리", "완충 방패", Grade.Blue, "", Verdict.Core)]
+    [InlineData("소우리", "아드레날린", Grade.Orange, "", Verdict.Core)]
+    [InlineData("소우리", "완충 방패", Grade.Blue, "owned:숫돌", Verdict.Avoid)]
+    [InlineData("소우리", "구급 상자", Grade.Blue, "owned:숫돌", Verdict.Avoid)]
+    [InlineData("소우리", "아드레날린", Grade.Orange, "owned:완충 방패", Verdict.Avoid)]
+    [InlineData("소우리", "숫돌", Grade.Purple, "owned:아드레날린", Verdict.Core)]
+    [InlineData("소우리", "추가 배터리", Grade.Purple, "owned:숫돌", Verdict.Core)]
     [InlineData("소우리", "복싱 글러브", Grade.Blue, "", Verdict.Core)]
-    [InlineData("소우리", "아드레날린", Grade.Orange, "", Verdict.Avoid)]
     [InlineData("소우리", "우정 배지", Grade.Purple, "", Verdict.Avoid)]
     [InlineData("소우리", "잉어 인형", Grade.Purple, "map:용궁 유원지", Verdict.Core)]
     [InlineData("소우리", "완벽한 나뭇가지", Grade.Orange, "map:가을 환상 숲", Verdict.Avoid)]
