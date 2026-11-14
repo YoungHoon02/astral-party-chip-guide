@@ -87,7 +87,7 @@ public class ShippedRulesTests
 
     [Fact]
     public void 자스민은_표식_칩을_가지면_에너지_공용_코어와_함께_못_가는_스타_이동_빌드를_뺀다() =>
-        Assert.Equal(new[] { 'B' }, ChipAdvisor.Builds(Load.Rules, At("자스민", "owned:타겟 보드"))!.Select(b => b.Letter));
+        Assert.Equal(new[] { 'B' }, ChipAdvisor.Builds(Load.Rules, At("자스민", "owned:마킹 스프레이"))!.Select(b => b.Letter));
 
     [Theory]
     [InlineData("파파라", "숫돌", Grade.Purple, "owned:커터칼", Verdict.Core)]
@@ -103,6 +103,8 @@ public class ShippedRulesTests
     [InlineData("자스민", "워프 엔진", Grade.Blue, "owned:이글 아이 조준경", Verdict.Core)]
     [InlineData("자스민", "복싱 글러브", Grade.Blue, "", Verdict.Core)]
     [InlineData("자스민", "8면체 주사위", Grade.Blue, "owned:타겟 보드", Verdict.Avoid)]
+    [InlineData("자스민", "타겟 보드", Grade.Blue, "", Verdict.Core)]
+    [InlineData("자스민", "타겟 보드", Grade.Blue, "owned:8면체 주사위", Verdict.Avoid)]
     [InlineData("자스민", "표준 조준경", Grade.Purple, "owned:타겟 보드", Verdict.Core)]
     [InlineData("니디 걸", "아드레날린", Grade.Orange, "", Verdict.Core)]
     [InlineData("니디 걸", "커터칼", Grade.Purple, "", Verdict.Core)]
