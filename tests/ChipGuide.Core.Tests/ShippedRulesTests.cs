@@ -26,7 +26,7 @@ public class ShippedRulesTests
     private static Situation At(string hero, string when)
     {
         var parts = when.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(p => p.Split(':')).ToDictionary(p => p[0], p => p[1]);
-        string[] Value(string key) => parts.TryGetValue(key, out var value) ? new[] { value } : Array.Empty<string>();
+        string[] Value(string key) => parts.TryGetValue(key, out var value) ? value.Split(',') : Array.Empty<string>();
         return new Situation(Hero(hero),
             ChipIds(Value("owned")),
             Value("ally").Select(Hero).ToHashSet(),
@@ -72,10 +72,11 @@ public class ShippedRulesTests
         foreach (var hero in heroes)
         {
             var builds = Load.Rules.BuildsOf(Hero(hero));
+            // 빌드끼리 칩을 나눠 쓰면 칩 하나로는 빌드 하나만 고를 수 없어, 그 빌드 코어를 모두 가진 판에 키워드 제한까지 적용해 경로를 만든다.
             var situations = builds.Count == 0
                 ? new[] { (Label: hero, Situation: At(hero, "")) }
                 : builds.Select(b => (Label: $"{hero} 코어 {b.Letter}",
-                    Situation: new Situation(Hero(hero), new HashSet<int> { b.Core.Min() }, new HashSet<int>(), 0, new HashSet<int>()))).ToArray();
+                    Situation: new Situation(Hero(hero), b.Core.ToHashSet(), new HashSet<int>(), 0, new HashSet<int>(), id => ChipKeywords.GetValueOrDefault(id)))).ToArray();
             foreach (var (label, situation) in situations)
             {
                 var core = ChipAdvisor.CoreChips(Load.Rules, situation).Select(id => chips[id]).ToList();
@@ -88,6 +89,20 @@ public class ShippedRulesTests
     [Fact]
     public void 자스민은_표식_칩을_가지면_에너지_공용_코어와_함께_못_가는_스타_이동_빌드를_뺀다() =>
         Assert.Equal(new[] { 'B' }, ChipAdvisor.Builds(Load.Rules, At("자스민", "owned:마킹 스프레이"))!.Select(b => b.Letter));
+
+    [Fact]
+    public void 링링은_표식_칩을_가지면_힐_에너지_빌드를_뺀다() =>
+        Assert.Equal(new[] { 'A' }, ChipAdvisor.Builds(Load.Rules, At("링링", "owned:마킹 스프레이"))!.Select(b => b.Letter));
+
+    [Theory]
+    [InlineData("알라나", "", "ABC")]
+    [InlineData("알라나", "owned:전기 코어", "AB")]
+    [InlineData("알라나", "owned:커터칼", "AC")]
+    [InlineData("알라나", "owned:커터칼,타겟 보드", "C")]
+    [InlineData("미미", "owned:슈팅 스타", "AB")]
+    [InlineData("미미", "owned:비타민 알약,닌자 수리검", "C")]
+    public void 세_갈래_빌드는_키워드를_고를수록_좁혀진다(string hero, string when, string open) =>
+        Assert.Equal(open, string.Concat(ChipAdvisor.Builds(Load.Rules, At(hero, when))!.Select(b => b.Letter)));
 
     [Theory]
     [InlineData("파파라", "숫돌", Grade.Purple, "owned:커터칼", Verdict.Core)]
@@ -106,9 +121,9 @@ public class ShippedRulesTests
     [InlineData("자스민", "타겟 보드", Grade.Blue, "", Verdict.Core)]
     [InlineData("자스민", "타겟 보드", Grade.Blue, "owned:8면체 주사위", Verdict.Avoid)]
     [InlineData("자스민", "표준 조준경", Grade.Purple, "owned:타겟 보드", Verdict.Core)]
-    [InlineData("니디 걸", "아드레날린", Grade.Orange, "", Verdict.Core)]
+    [InlineData("니디 걸", "아드레날린", Grade.Orange, "", Verdict.Good)]
     [InlineData("니디 걸", "커터칼", Grade.Purple, "", Verdict.Core)]
-    [InlineData("니디 걸", "커터칼", Grade.Purple, "owned:숫돌", Verdict.Avoid)]
+    [InlineData("니디 걸", "커터칼", Grade.Purple, "owned:숫돌", Verdict.Core)]
     [InlineData("니디 걸", "구급 상자", Grade.Blue, "owned:아드레날린", Verdict.Avoid)]
     [InlineData("니디 걸", "아드레날린", Grade.Orange, "owned:커터칼", Verdict.Avoid)]
     [InlineData("니디 걸", "완충 방패", Grade.Blue, "owned:아드레날린", Verdict.Core)]
@@ -130,8 +145,8 @@ public class ShippedRulesTests
     [InlineData("메가스", "닌자 수리검", Grade.Orange, "ally:보니", Verdict.Good)]
     [InlineData("린", "복싱 글러브", Grade.Purple, "", Verdict.Avoid)]
     [InlineData("코마치", "은행 카드", Grade.Blue, "", null)]
-    [InlineData("알라나", "표준 조준경", Grade.Purple, "", Verdict.Good)]
-    [InlineData("알라나", "커터칼", Grade.Purple, "ally:루루", Verdict.Good)]
+    [InlineData("알라나", "표준 조준경", Grade.Purple, "", Verdict.Core)]
+    [InlineData("알라나", "커터칼", Grade.Purple, "ally:루루", Verdict.Core)]
     [InlineData("알라나", "커터칼", Grade.Purple, "owned:아드레날린;ally:루루", Verdict.Avoid)]
     [InlineData("파파라", "커터칼", Grade.Purple, "owned:아드레날린;ally:루루", Verdict.Core)]
     [InlineData("파루난", "커터칼", Grade.Purple, "ally:루루", null)]
@@ -168,18 +183,18 @@ public class ShippedRulesTests
     [InlineData("최고귀염뽀짝천사", "슈팅 스타", Grade.Purple, "map:마법 학교", Verdict.Avoid)]
     [InlineData("최고귀염뽀짝천사", "슈팅 스타", Grade.Orange, "map:유령 골목", Verdict.Avoid)]
     [InlineData("소우리", "완충 방패", Grade.Blue, "", Verdict.Core)]
-    [InlineData("소우리", "아드레날린", Grade.Orange, "", Verdict.Core)]
-    [InlineData("소우리", "완충 방패", Grade.Blue, "owned:숫돌", Verdict.Avoid)]
-    [InlineData("소우리", "구급 상자", Grade.Blue, "owned:숫돌", Verdict.Avoid)]
+    [InlineData("소우리", "아드레날린", Grade.Orange, "", Verdict.Good)]
+    [InlineData("소우리", "완충 방패", Grade.Blue, "owned:숫돌", Verdict.Core)]
+    [InlineData("소우리", "구급 상자", Grade.Blue, "owned:숫돌", Verdict.Good)]
     [InlineData("소우리", "아드레날린", Grade.Orange, "owned:완충 방패", Verdict.Avoid)]
-    [InlineData("소우리", "숫돌", Grade.Purple, "owned:아드레날린", Verdict.Core)]
+    [InlineData("소우리", "숫돌", Grade.Purple, "owned:아드레날린", Verdict.Good)]
     [InlineData("소우리", "추가 배터리", Grade.Purple, "owned:숫돌", Verdict.Core)]
     [InlineData("소우리", "복싱 글러브", Grade.Blue, "", Verdict.Core)]
     [InlineData("소우리", "우정 배지", Grade.Purple, "", Verdict.Avoid)]
     [InlineData("소우리", "워프 엔진", Grade.Blue, "", Verdict.Good)]
     [InlineData("소우리", "잉어 인형", Grade.Purple, "map:용궁 유원지", Verdict.Core)]
     [InlineData("소우리", "완벽한 나뭇가지", Grade.Orange, "map:가을 환상 숲", Verdict.Avoid)]
-    [InlineData("알라나", "커터칼", Grade.Purple, "ally:소우리", Verdict.Good)]
+    [InlineData("알라나", "커터칼", Grade.Purple, "ally:소우리", Verdict.Core)]
     [InlineData("알라나", "아드레날린", Grade.Orange, "ally:소우리", Verdict.Good)]
     [InlineData("알라나", "완벽한 나뭇가지", Grade.Orange, "map:가을 환상 숲", Verdict.Core)]
     [InlineData("자스민", "완벽한 나뭇가지", Grade.Orange, "map:가을 환상 숲", Verdict.Good)]
@@ -189,6 +204,28 @@ public class ShippedRulesTests
     [InlineData("루카", "요정의 날개", Grade.Purple, "map:가을 환상 숲", Verdict.Good)]
     [InlineData("알라나", "커터칼", Grade.Purple, "map:가을 환상 숲", Verdict.Good)]
     [InlineData("알라나", "커터칼", Grade.Purple, "owned:아드레날린;map:가을 환상 숲", Verdict.Avoid)]
+    [InlineData("소우리", "숫돌", Grade.Purple, "owned:완충 방패", Verdict.Avoid)]
+    [InlineData("링링", "완충 방패", Grade.Blue, "", Verdict.Core)]
+    [InlineData("링링", "레일건", Grade.Orange, "", Verdict.Core)]
+    [InlineData("링링", "타겟 보드", Grade.Blue, "", Verdict.Core)]
+    [InlineData("링링", "레일건", Grade.Orange, "owned:타겟 보드", Verdict.Avoid)]
+    [InlineData("링링", "표준 조준경", Grade.Purple, "owned:레일건", Verdict.Avoid)]
+    [InlineData("링링", "쇼크 글러브", Grade.Purple, "owned:마킹 스프레이", Verdict.Avoid)]
+    [InlineData("링링", "완충 방패", Grade.Blue, "owned:레일건", Verdict.Core)]
+    [InlineData("링링", "에너지 소드", Grade.Blue, "owned:레일건", Verdict.Good)]
+    [InlineData("링링", "닌자 수리검", Grade.Orange, "owned:타겟 보드", Verdict.Good)]
+    [InlineData("알라나", "타겟 보드", Grade.Blue, "owned:전기 코어", Verdict.Core)]
+    [InlineData("알라나", "커터칼", Grade.Purple, "owned:전기 코어", Verdict.Core)]
+    [InlineData("알라나", "구급 상자", Grade.Blue, "owned:타겟 보드", Verdict.Core)]
+    [InlineData("알라나", "타겟 보드", Grade.Blue, "owned:전기 코어,커터칼", Verdict.Avoid)]
+    [InlineData("알라나", "전기 코어", Grade.Purple, "owned:커터칼,타겟 보드", Verdict.Avoid)]
+    [InlineData("알라나", "닌자 수리검", Grade.Orange, "", Verdict.Good)]
+    [InlineData("미미", "ATM기", Grade.Blue, "", Verdict.Core)]
+    [InlineData("미미", "닌자 수리검", Grade.Orange, "", Verdict.Core)]
+    [InlineData("미미", "완충 방패", Grade.Blue, "owned:ATM기", Verdict.Core)]
+    [InlineData("미미", "닌자 수리검", Grade.Orange, "owned:ATM기,비타민 알약", Verdict.Avoid)]
+    [InlineData("미미", "ATM기", Grade.Blue, "owned:비타민 알약,닌자 수리검", Verdict.Avoid)]
+    [InlineData("미미", "휴대용 선풍기", Grade.Purple, "owned:비타민 알약,닌자 수리검", Verdict.Core)]
     public void 상황별_판정(string hero, string chip, Grade grade, string when, Verdict? expected)
     {
         var id = Names.Chip(chip)!.Single(i => Names.ChipGrades[i] == grade);
